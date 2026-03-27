@@ -39,6 +39,12 @@ export default function Sidebar() {
           Raw Materials
         </NavItem>
 
+        {/* ✅ NEW: Product Master */}
+<NavItem to="/inventory/product-master">
+  <FaBoxesStacked />
+  Product Master
+</NavItem>
+
         {/* ================= WIP INVENTORY ================= */}
         <div>
           <div

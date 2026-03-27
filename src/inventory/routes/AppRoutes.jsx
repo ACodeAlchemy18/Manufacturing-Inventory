@@ -8,6 +8,7 @@ import FinishedGoods from "../pages/FinishedGoods";
 import StockMovement from "../pages/StockMovement";
 import Reports from "../pages/Reports";
 import ProductionOverview from "../pages/ProductionOverview";
+import ProductMaster from "../pages/ProductMaster";
 
 /* WIP */
 import PreAssembling from "../wip/PreAssembling";
@@ -32,6 +33,7 @@ export default function AppRoutes() {
         {/* Main Routes */}
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="raw-materials" element={<RawMaterials />} />
+        <Route path="product-master" element={<ProductMaster />} />
         <Route path="production-overview" element={<ProductionOverview />} />
         <Route path="finished-goods" element={<FinishedGoods />} />
         <Route path="stock-movement" element={<StockMovement />} />

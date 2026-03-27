@@ -74,37 +74,36 @@ export default function Features() {
 }
 
 
-/* 🔥 Equal Height Card */
+/* 🔥 Full Clickable Card */
 function FeatureCard({ icon, title, description, link }) {
   return (
-    <div className="bg-[#f4f2ee] p-10 rounded-[30px] 
-                    flex flex-col h-full 
-                    transition duration-300 hover:shadow-xl">
+    <Link to={link} className="block h-full">
+      <div className="bg-[#f4f2ee] p-10 rounded-[30px] 
+                      flex flex-col h-full 
+                      transition duration-300 hover:shadow-xl cursor-pointer">
 
-      {/* Icon */}
-      <div className="text-3xl text-purple-500 mb-8">
-        {icon}
+        {/* Icon */}
+        <div className="text-3xl text-purple-500 mb-8">
+          {icon}
+        </div>
+
+        {/* Content */}
+        <div className="flex-grow">
+          <h3 className="text-2xl font-semibold text-purple-600 mb-4">
+            {title}
+          </h3>
+
+          <p className="text-gray-600 leading-relaxed">
+            {description}
+          </p>
+        </div>
+
+        {/* Read More (optional, still works) */}
+        <span className="text-purple-600 font-medium mt-8 inline-block">
+          Read more →
+        </span>
+
       </div>
-
-      {/* Content grows */}
-      <div className="flex-grow">
-        <h3 className="text-2xl font-semibold text-purple-600 mb-4">
-          {title}
-        </h3>
-
-        <p className="text-gray-600 leading-relaxed">
-          {description}
-        </p>
-      </div>
-
-      {/* Read More always at bottom */}
-      <Link
-        to={link}
-        className="text-purple-600 font-medium hover:underline mt-8 inline-block"
-      >
-        Read more →
-      </Link>
-
-    </div>
+    </Link>
   );
 }
