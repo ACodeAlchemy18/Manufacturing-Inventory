@@ -14,54 +14,27 @@ export default function PreAssembling() {
   const [formData, setFormData] = useState({});
   const [materialList, setMaterialList] = useState([]);
 
-
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [quantity, setQuantity] = useState("");
 
-  const [usableScrap, setUsableScrap] = useState("");
-  const [unusableScrap, setUnusableScrap] = useState("");
-
   const [editIndex, setEditIndex] = useState(null);
-
-
   const [showQCForm, setShowQCForm] = useState(false);
 
   const [qcData, setQcData] = useState({
     qcStatus: "",
     qcCheckedBy: "",
     qcDate: "",
-    qcRemarks: ""
+    qcRemarks: "",
   });
 
-
-
-  const moveToPhosphating = (product) => {
-    // Find the index of the product in savedData
-    const index = savedData.findIndex(
-      d => d["Product ID"] === product.productId
-    );
-    if (index === -1) return;
-
-    const updated = [...savedData];
-    updated[index]["Process Stage"] = "Phosphating"; // Update stage
-    updated[index]["Current Status"] = "Pending"; // Reset status
-    setSavedData(updated);
-    localStorage.setItem("preAssembling", JSON.stringify(updated));
-
-    alert(`${product.productName} moved to Phosphating!`);
-  };
-
+  // ✅ Load data from localStorage
   useEffect(() => {
     setSavedData(JSON.parse(localStorage.getItem("preAssembling")) || []);
     setProducts(JSON.parse(localStorage.getItem("products")) || []);
     setRawMaterials(JSON.parse(localStorage.getItem("rawMaterials")) || []);
   }, []);
 
-
-
-
-
-  /* ================= OPEN FORM ================= */
+  // ================= OPEN FORM =================
   const openForm = (product) => {
     setSelectedProduct(product);
     setIsEditing(true);
@@ -70,15 +43,15 @@ export default function PreAssembling() {
     setFormData({
       "WIP ID": Date.now(),
       "Product Name": product.productName,
-      "Product ID": product.productId,       // optional but recommended
-      "Process Stage": "Pre-Assembling",     // <-- CHANGED
+      "Product ID": String(product.productId),
+      "Process Stage": "Pre-Assembling",
       "Current Status": "",
     });
     setMaterialList([]);
     setEditIndex(null);
   };
 
-  /* ================= ADD MATERIAL ================= */
+  // ================= ADD MATERIAL =================
   const addMaterial = () => {
     if (!selectedMaterial || !quantity) return;
 
@@ -87,72 +60,65 @@ export default function PreAssembling() {
       {
         material: selectedMaterial,
         qty: Number(quantity),
-
-        usableQty: "",
+        usableQty: 0,
         usableReason: "",
         usableCustomReason: "",
-
-        unusableQty: "",
+        unusableQty: 0,
         unusableReason: "",
         unusableCustomReason: "",
-        outputQty: Number(quantity), // ✅ ADD THIS LINE HERE
+        outputQty: Number(quantity),
       },
     ]);
     setSelectedMaterial("");
     setQuantity("");
   };
 
-  /* ================= DELETE MATERIAL ================= */
+  // ================= DELETE MATERIAL =================
   const deleteMaterial = (i) => {
     setMaterialList(materialList.filter((_, index) => index !== i));
   };
 
-const handleSave = () => {
-  if (materialList.length === 0) {
-    alert("Please add at least one material!");
-    return;
-  }
+  // ================= SAVE NEW ENTRY =================
+  const handleSave = () => {
+    if (materialList.length === 0) {
+      alert("Please add at least one material!");
+      return;
+    }
 
-  const newEntry = {
-    ...formData,
-    "Product ID": String(formData["Product ID"]), // ✅ FORCE STRING
-    materials: materialList,
+    const newEntry = {
+      ...formData,
+      "Product ID": String(formData["Product ID"]),
+      materials: materialList,
+    };
+
+    const filtered = savedData.filter(
+      (d) => String(d["Product ID"]) !== String(formData["Product ID"])
+    );
+
+    const updated = [...filtered, newEntry];
+
+    setSavedData(updated);
+    localStorage.setItem("preAssembling", JSON.stringify(updated));
+    setIsEditing(false);
   };
 
-  console.log("Saving Entry:", newEntry); // ✅ DEBUG
+  // ================= VIEW PRODUCT =================
+  const handleView = (product) => {
+    const found = savedData.find(
+      (d) => String(d["Product ID"]) === String(product.productId)
+    );
 
-  // ✅ REMOVE OLD ENTRY (avoid duplicate issue)
-  const filtered = savedData.filter(
-    (d) => String(d["Product ID"]) !== String(formData["Product ID"])
-  );
+    if (!found) {
+      alert("No data found!");
+      return;
+    }
 
-  const updated = [...filtered, newEntry];
+    setViewData(found);
+    setSelectedProduct(product);
+    setIsViewing(true);
+  };
 
-  setSavedData(updated);
-  localStorage.setItem("preAssembling", JSON.stringify(updated));
-
-  setIsEditing(false);
-};
-
-  /* ================= VIEW ================= */
-const handleView = (product) => {
-  const found = savedData.find(
-    (d) => String(d["Product ID"]) === String(product.productId)
-  );
-
-  console.log("Found Data:", found); // DEBUG
-
-  if (!found) {
-    alert("No data found!");
-    return;
-  }
-
-  setViewData(found);
-  setSelectedProduct(product);
-  setIsViewing(true);
-};
-
-  /* ================= DELETE ================= */
+  // ================= DELETE PRODUCT =================
   const handleDelete = (index) => {
     const updated = savedData.filter((_, i) => i !== index);
     setSavedData(updated);
@@ -160,40 +126,58 @@ const handleView = (product) => {
     setIsViewing(false);
   };
 
-  /* ================= EDIT ================= */
+  // ================= EDIT PRODUCT =================
   const handleEdit = (data, index) => {
     setIsViewing(false);
     setIsEditing(true);
 
-    const updatedMaterials = (data.materials || []).map(m => ({
-      ...m,
-      scrap: m.scrap || []  // ✅ ensure scrap exists
-    }));
-
     setFormData(data);
-    setMaterialList(updatedMaterials);
+    setMaterialList(
+      (data.materials || []).map((m) => ({
+        ...m,
+        usableQty: m.usableQty || 0,
+        unusableQty: m.unusableQty || 0,
+        outputQty: m.outputQty ?? m.qty,
+      }))
+    );
     setEditIndex(index);
   };
 
-  /* ================= UPDATE ================= */
+  // ================= UPDATE PRODUCT =================
   const handleUpdate = () => {
-    const updated = [...savedData];
+    if (editIndex === null) return;
 
-    updated[editIndex] = {
-      ...formData,
-      materials: materialList, // ✅ scrap already inside materials
-    };
+    const updated = [...savedData];
+    updated[editIndex] = { ...formData, materials: materialList };
 
     setSavedData(updated);
     localStorage.setItem("preAssembling", JSON.stringify(updated));
-
     setIsEditing(false);
   };
-  /* ================= VIEW UI ================= */
+
+  // ================= MOVE TO PHOSPHATING =================
+  const moveToPhosphating = (product) => {
+    const index = savedData.findIndex(
+      (d) => String(d["Product ID"]) === String(product.productId)
+    );
+    if (index === -1) return;
+
+    const updated = [...savedData];
+    updated[index]["Process Stage"] = "Phosphating";
+    updated[index]["Current Status"] = "Pending";
+    setSavedData(updated);
+    localStorage.setItem("preAssembling", JSON.stringify(updated));
+
+    alert(`${product.productName} moved to Phosphating!`);
+  };
+
+  // ================= RENDER =================
   if (isViewing && viewData) {
     const index = savedData.findIndex(
-      (d) => d["Product ID"] === viewData["Product ID"]
+      (d) => String(d["Product ID"]) === String(viewData["Product ID"])
     );
+
+    
 
     return (
       <div className="min-h-screen bg-gray-100 p-8">

@@ -3,43 +3,40 @@ import { useState, useEffect } from "react";
 export default function Phosphating() {
   const [savedData, setSavedData] = useState([]);
   const [products, setProducts] = useState([]);
+  const [rawMaterials, setRawMaterials] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-
   const [formData, setFormData] = useState({});
   const [materialList, setMaterialList] = useState([]);
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [quantity, setQuantity] = useState("");
 
-  const [rawMaterials, setRawMaterials] = useState([]);
-
-
   const [isViewing, setIsViewing] = useState(false);
   const [viewData, setViewData] = useState(null);
   const [editIndex, setEditIndex] = useState(null);
 
+  const [showQCForm, setShowQCForm] = useState(false);
+  const [qcData, setQcData] = useState({
+    qcStatus: "",
+    qcCheckedBy: "",
+    qcDate: "",
+    qcRemarks: "",
+  });
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("preAssembling")) || [];
     setSavedData(stored);
 
-    const phosphatingProducts = stored.filter(
-      (p) => p["Process Stage"] === "Phosphating"
-    );
-    setProducts(phosphatingProducts);
-
-    const rm = JSON.parse(localStorage.getItem("rawMaterials")) || [];
-    setRawMaterials(rm);
+    setProducts(stored.filter((p) => p["Process Stage"] === "Phosphating"));
+    setRawMaterials(JSON.parse(localStorage.getItem("rawMaterials")) || []);
   }, []);
 
   /* ================= OPEN FORM ================= */
   const openForm = (product) => {
     setSelectedProduct(product);
 
-    // Get previous stage output
     const prevMaterials = product.materials || [];
-
     const totalOutput = prevMaterials.reduce(
       (sum, m) => sum + (m.outputQty || m.qty || 0),
       0
@@ -49,7 +46,7 @@ export default function Phosphating() {
       "Phosphating ID": `PH-${Date.now()}`,
       Date: new Date().toISOString().split("T")[0],
       "Product Name": product["Product Name"],
-      Quantity: totalOutput, // ✅ AUTO FROM PREVIOUS STAGE
+      Quantity: totalOutput,
       "Phosphating Type": "",
       "Current Status": "Pending",
     });
@@ -77,166 +74,101 @@ export default function Phosphating() {
     setQuantity("");
   };
 
-
-
-  const [showQCForm, setShowQCForm] = useState(false);
-  const [qcData, setQcData] = useState({
-    qcStatus: "",
-    qcCheckedBy: "",
-    qcDate: "",
-    qcRemarks: "",
-  });
-
-
-
-  /* ================= DELETE ================= */
+  /* ================= DELETE MATERIAL ================= */
   const deleteMaterial = (index) => {
     const updated = materialList.filter((_, i) => i !== index);
     setMaterialList(updated);
   };
 
-/* ================= SAVE ================= */
-const handleSave = () => {
-  const updated = [...savedData];
+  /* ================= SAVE PHOSPHATING ================= */
+  const handleSave = () => {
+    const updated = [...savedData];
+    let index;
 
-  let index;
+    if (editIndex !== null) {
+      index = editIndex;
+    } else {
+      index = updated.findIndex(
+        (d) => d["Product ID"] === selectedProduct["Product ID"]
+      );
+    }
 
-  if (editIndex !== null) {
-    index = editIndex;
-  } else {
-    index = updated.findIndex(
-      (d) => d["Product ID"] === selectedProduct["Product ID"]
-    );
-  }
+    if (index === -1) return alert("Product not found!");
 
-  if (index !== -1) {
-
-    // ✅ 🔥 CALCULATE TOTAL OUTPUT FROM MATERIALS
     const totalOutputQty = materialList.reduce(
       (sum, m) => sum + (m.outputQty ?? m.qty ?? 0),
       0
     );
 
-    // ✅ SAVE EVERYTHING PROPERLY
     updated[index].phosphating = {
       ...formData,
       materials: materialList,
-      outputQty: totalOutputQty,   // 🔥 CRITICAL FIX
+      outputQty: totalOutputQty,
     };
 
-    // ✅ ALSO STORE FOR NEXT STAGE (VERY IMPORTANT)
     updated[index]["Output Qty"] = totalOutputQty;
-
     localStorage.setItem("preAssembling", JSON.stringify(updated));
     setSavedData(updated);
-
     setEditIndex(null);
+    setShowForm(false);
 
-    setProducts(
-      updated.filter((p) => p["Process Stage"] === "Phosphating")
-    );
-
+    setProducts(updated.filter((p) => p["Process Stage"] === "Phosphating"));
     alert("Phosphating Data Saved!");
-  }
+  };
 
-  setShowForm(false);
-};
-const moveToPowdering = (product) => {
-  const updated = [...savedData];
-  const index = updated.findIndex(
-    (d) => d["Product ID"] === product["Product ID"]
-  );
+  /* ================= MOVE TO POWDERING ================= */
+  const moveToPowdering = (product) => {
+    const updated = [...savedData];
+    const index = updated.findIndex((d) => d["Product ID"] === product["Product ID"]);
+    if (index === -1) return alert("Product not found!");
 
-  if (index === -1) {
-    console.log("Product not found!", product);
-    return;
-  }
+    const phosphatingData = updated[index].phosphating;
 
-  const phosphatingData = updated[index].phosphating;
-  console.log("PHOSPHATING DATA:", phosphatingData);
+    if (!phosphatingData?.qc) return alert("⚠️ Please complete QC before moving!");
+    if ((phosphatingData.qc.qcStatus || "").toLowerCase() !== "approved")
+      return alert("❌ Only QC Approved products can move!");
 
-  if (!phosphatingData?.qc) {
-    alert("⚠️ Please complete QC before moving!");
-    return;
-  }
+    updated[index]["Process Stage"] = "Powdering";
+    updated[index]["Current Status"] = "Pending";
 
-  console.log("QC STATUS:", phosphatingData.qc.qcStatus);
+    setSavedData(updated);
+    localStorage.setItem("preAssembling", JSON.stringify(updated));
+    setProducts(updated.filter((p) => p["Process Stage"] === "Phosphating"));
+    alert(`✅ ${product["Product Name"]} moved to Powdering!`);
+  };
 
-  if ((phosphatingData.qc.qcStatus || "").toLowerCase() !== "approved") {
-    alert("❌ Only QC Approved products can move!");
-    return;
-  }
-
-  updated[index]["Process Stage"] = "Powdering";
-  updated[index]["Current Status"] = "Pending";
-
-  setSavedData(updated);
-  localStorage.setItem("preAssembling", JSON.stringify(updated));
-
-  setProducts(
-    updated.filter((p) => p["Process Stage"] === "Phosphating")
-  );
-
-  alert(`✅ ${product["Product Name"]} moved to Powdering!`);
-};
-
-const handleView = (product) => {
-  const data = savedData.find(
-    (d) => d["Product ID"] === product["Product ID"]
-  );
-
-  if (data) {
+  /* ================= VIEW ================= */
+  const handleView = (product) => {
+    const data = savedData.find((d) => d["Product ID"] === product["Product ID"]);
+    if (!data) return alert("No data found!");
     setViewData(data);
     setIsViewing(true);
-  } else {
-    alert("No data found!");
-  }
-};
+  };
 
-
-  //delete the detail
+  /* ================= DELETE PHOSPHATING ================= */
   const handleDelete = (index) => {
-  const updated = [...savedData];
+    const updated = [...savedData];
+    delete updated[index].phosphating;
+    updated[index]["Process Stage"] = "Phosphating";
+    updated[index]["Current Status"] = "Pending";
 
-  // Remove phosphating data
-  delete updated[index].phosphating;
+    setSavedData(updated);
+    localStorage.setItem("preAssembling", JSON.stringify(updated));
+    setViewData(updated[index]);
+    setProducts(updated.filter((p) => p["Process Stage"] === "Phosphating"));
+    alert("Deleted successfully!");
+  };
 
-  // Optionally reset stage back (if needed)
-  updated[index]["Process Stage"] = "Phosphating";
-  updated[index]["Current Status"] = "Pending";
-
-  setSavedData(updated);
-  localStorage.setItem("preAssembling", JSON.stringify(updated));
-
-  // Refresh view
-  setViewData(updated[index]);
-
-  // Refresh table
-  setProducts(
-    updated.filter((p) => p["Process Stage"] === "Phosphating")
-  );
-
-  alert("Deleted successfully!");
-};
-
-//edit the data
-const handleEdit = (data, index) => {
-  const phosphatingData = data.phosphating;
-
-  if (!phosphatingData) {
-    alert("No data to edit!");
-    return;
-  }
-
-  setSelectedProduct(data);
-  setEditIndex(index); // 🔥 THIS IS KEY
-
-  setFormData({ ...phosphatingData });
-  setMaterialList(phosphatingData.materials || []);
-
-  setShowForm(true);
-  setIsViewing(false);
-};
+  /* ================= EDIT ================= */
+  const handleEdit = (data, index) => {
+    if (!data.phosphating) return alert("No data to edit!");
+    setSelectedProduct(data);
+    setEditIndex(index);
+    setFormData({ ...data.phosphating });
+    setMaterialList(data.phosphating.materials || []);
+    setShowForm(true);
+    setIsViewing(false);
+  };
 
 
   /* ================= FORM VIEW ================= */
