@@ -6,6 +6,16 @@ export default function Signup() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+
+  const [companyName, setCompanyName] = useState("");
+  const [industryType, setIndustryType] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pinCode, setPinCode] = useState("");
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
+  const [gst, setGst] = useState("");
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -17,8 +27,20 @@ export default function Signup() {
   const handleSignup = () => {
     setError("");
 
-    if (!name || !email || !password || !confirmPassword) {
-      return setError("All fields are required");
+    if (
+      !name ||
+      !email ||
+      !companyName ||
+      !industryType ||
+      !address ||
+      !phone ||
+      !pinCode ||
+      !state ||
+      !city ||
+      !password ||
+      !confirmPassword
+    ) {
+      return setError("All fields are required except GST Number");
     }
 
     if (password.length < 6) {
@@ -29,8 +51,20 @@ export default function Signup() {
       return setError("Passwords do not match");
     }
 
-    // Save user in localStorage
-    const user = { name, email, password };
+    const user = {
+      name,
+      email,
+      companyName,
+      industryType,
+      address,
+      phone,
+      pinCode,
+      state,
+      city,
+      gst,
+      password,
+    };
+
     localStorage.setItem("user", JSON.stringify(user));
 
     alert("Signup successful!");
@@ -43,7 +77,6 @@ export default function Signup() {
       {/* LEFT SIDE */}
       <div className="w-1/2 flex flex-col justify-center px-20">
 
-    
         <h2 className="text-5xl font-bold mb-10 text-gray-900">
           Create Account
         </h2>
@@ -64,36 +97,101 @@ export default function Signup() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        {/* Password */}
-        <div className="relative mb-4">
+        {/* Company + Industry */}
+        <div className="flex gap-4 mb-4">
           <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            className="w-full px-4 py-3 border rounded-md"
-            onChange={(e) => setPassword(e.target.value)}
+            type="text"
+            placeholder="Company Name"
+            className="w-1/2 px-4 py-3 border rounded-md"
+            onChange={(e) => setCompanyName(e.target.value)}
           />
-          <span
-            className="absolute right-3 top-3 cursor-pointer text-gray-500"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? "🙈" : "👁️"}
-          </span>
+          <input
+            type="text"
+            placeholder="Industry Type"
+            className="w-1/2 px-4 py-3 border rounded-md"
+            onChange={(e) => setIndustryType(e.target.value)}
+          />
         </div>
 
-        {/* Confirm Password */}
-        <div className="relative mb-4">
+        {/* Address */}
+        <input
+          type="text"
+          placeholder="Address"
+          className="w-full mb-4 px-4 py-3 border rounded-md"
+          onChange={(e) => setAddress(e.target.value)}
+        />
+
+        {/* Phone + Pin */}
+        <div className="flex gap-4 mb-4">
           <input
-            type={showConfirm ? "text" : "password"}
-            placeholder="Confirm Password"
-            className="w-full px-4 py-3 border rounded-md"
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            type="tel"
+            placeholder="Phone Number"
+            className="w-1/2 px-4 py-3 border rounded-md"
+            onChange={(e) => setPhone(e.target.value)}
           />
-          <span
-            className="absolute right-3 top-3 cursor-pointer text-gray-500"
-            onClick={() => setShowConfirm(!showConfirm)}
-          >
-            {showConfirm ? "🙈" : "👁️"}
-          </span>
+          <input
+            type="text"
+            placeholder="Pin Code"
+            className="w-1/2 px-4 py-3 border rounded-md"
+            onChange={(e) => setPinCode(e.target.value)}
+          />
+        </div>
+
+        {/* State + City */}
+        <div className="flex gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="State"
+            className="w-1/2 px-4 py-3 border rounded-md"
+            onChange={(e) => setState(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="City"
+            className="w-1/2 px-4 py-3 border rounded-md"
+            onChange={(e) => setCity(e.target.value)}
+          />
+        </div>
+
+        {/* GST */}
+        <input
+          type="text"
+          placeholder="GST Number (Optional)"
+          className="w-full mb-4 px-4 py-3 border rounded-md"
+          onChange={(e) => setGst(e.target.value)}
+        />
+
+        {/* Password + Confirm */}
+        <div className="flex gap-4 mb-4">
+          <div className="relative w-1/2">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className="w-full px-4 py-3 border rounded-md"
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <span
+              className="absolute right-3 top-3 cursor-pointer text-gray-500"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+          </div>
+
+          <div className="relative w-1/2">
+            <input
+              type={showConfirm ? "text" : "password"}
+              placeholder="Confirm Password"
+              className="w-full px-4 py-3 border rounded-md"
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            <span
+              className="absolute right-3 top-3 cursor-pointer text-gray-500"
+              onClick={() => setShowConfirm(!showConfirm)}
+            >
+              {showConfirm ? "🙈" : "👁️"}
+            </span>
+          </div>
         </div>
 
         {/* Error */}

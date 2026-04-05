@@ -2,49 +2,35 @@ import { useState, useEffect } from "react";
 
 export default function ProductMaster() {
   const [products, setProducts] = useState([]);
-  const [rawMaterials, setRawMaterials] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
 
   const [product, setProduct] = useState({
     productId: "",
     productName: "",
-    bom: [],
+    status: "Pending",
   });
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
     const savedProducts = JSON.parse(localStorage.getItem("products")) || [];
-    const materials = JSON.parse(localStorage.getItem("rawMaterials")) || [];
-
     setProducts(savedProducts);
-    setRawMaterials(materials);
   }, []);
-
-  /* ================= ADD MATERIAL ================= */
-  const addMaterial = () => {
-    setProduct({
-      ...product,
-      bom: [...product.bom, { material: "", qty: "" }],
-    });
-  };
-
-  /* ================= HANDLE CHANGE ================= */
-  const handleChange = (index, field, value) => {
-    const updated = [...product.bom];
-    updated[index][field] = value;
-    setProduct({ ...product, bom: updated });
-  };
 
   /* ================= SAVE PRODUCT ================= */
   const saveProduct = () => {
     let updated;
 
+    if (!product.productId || !product.productName) {
+      alert("Please fill all fields");
+      return;
+    }
+
     if (editIndex !== null) {
       updated = [...products];
       updated[editIndex] = product;
     } else {
-      updated = [...products, product];
+      updated = [...products, { ...product, status: "Pending" }];
     }
 
     setProducts(updated);
@@ -68,43 +54,54 @@ export default function ProductMaster() {
     localStorage.setItem("products", JSON.stringify(updated));
   };
 
+  /* ================= MOVE TO WIP ================= */
+  const moveToWIP = (index) => {
+    let updatedProducts = [...products];
+
+    const prod = updatedProducts[index];
+
+    // prevent duplicate move
+    if (prod.status === "Moved") {
+      alert("Already moved to WIP");
+      return;
+    }
+
+    const existingWIP =
+      JSON.parse(localStorage.getItem("preAssembling")) || [];
+
+    const newItem = {
+      wipId: Date.now(),
+      productId: prod.productId,
+      productName: prod.productName,
+      quantity: 1,
+      status: "In Progress",
+    };
+
+    // update WIP
+    const updatedWIP = [...existingWIP, newItem];
+    localStorage.setItem("preAssembling", JSON.stringify(updatedWIP));
+
+    // update product status
+    updatedProducts[index].status = "Moved";
+
+    setProducts(updatedProducts);
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
+
+    alert("Moved to WIP 🚀");
+  };
+
   /* ================= RESET ================= */
   const resetForm = () => {
     setProduct({
       productId: "",
       productName: "",
-      bom: [],
+      status: "Pending",
     });
     setEditIndex(null);
     setIsAdding(false);
   };
 
-  /* ================= START PRODUCTION ================= */
-  const startProduction = (prod) => {
-    let materials = [...rawMaterials];
-
-    prod.bom.forEach((item) => {
-      const index = materials.findIndex(
-        (m) => m["Material Name"] === item.material
-      );
-
-      if (index !== -1) {
-        const available = Number(materials[index]["Available Quantity"]);
-        const required = Number(item.qty);
-
-        materials[index]["Available Quantity"] =
-          available - required;
-      }
-    });
-
-    localStorage.setItem("rawMaterials", JSON.stringify(materials));
-    setRawMaterials(materials);
-
-    alert("Production Started & Stock Updated 🔥");
-  };
-
   /* ================= VIEW MODE ================= */
-
   if (!isAdding) {
     return (
       <div className="p-8 bg-gray-100 rounded-2xl">
@@ -119,13 +116,13 @@ export default function ProductMaster() {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl border shadow-sm">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full text-sm text-center">
             <thead className="bg-gray-50">
               <tr>
                 <th className="border px-3 py-2">Product ID</th>
                 <th className="border px-3 py-2">Product Name</th>
-                <th className="border px-3 py-2">Materials</th>
+                <th className="border px-3 py-2">Status</th>
                 <th className="border px-3 py-2">Action</th>
               </tr>
             </thead>
@@ -133,7 +130,7 @@ export default function ProductMaster() {
             <tbody>
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="text-center p-4">
+                  <td colSpan="4" className="p-4">
                     No Products Found
                   </td>
                 </tr>
@@ -143,20 +140,33 @@ export default function ProductMaster() {
                     <td className="border px-3 py-2">{p.productId}</td>
                     <td className="border px-3 py-2">{p.productName}</td>
 
+                    {/* STATUS */}
                     <td className="border px-3 py-2">
-                      {p.bom.map((b, j) => (
-                        <div key={j}>
-                          {b.material} - {b.qty}
-                        </div>
-                      ))}
+                      {p.status === "Moved" ? (
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                          Moved to WIP
+                        </span>
+                      ) : (
+                        <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">
+                          Pending
+                        </span>
+                      )}
                     </td>
 
+                    {/* ACTIONS */}
                     <td className="border px-3 py-2 space-x-2">
                       <button
-                        onClick={() => startProduction(p)}
-                        className="bg-green-600 text-white px-2 py-1 rounded"
+                        onClick={() => moveToWIP(i)}
+                        disabled={p.status === "Moved"}
+                        className={`px-2 py-1 rounded text-white ${
+                          p.status === "Moved"
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-green-600"
+                        }`}
                       >
-                        Start
+                        {p.status === "Moved"
+                          ? "Moved"
+                          : "Move to WIP"}
                       </button>
 
                       <button
@@ -183,119 +193,58 @@ export default function ProductMaster() {
     );
   }
 
-  /* ================= ADD / EDIT FORM ================= */
+  /* ================= FORM ================= */
 
   return (
     <div className="p-8 bg-gray-100 rounded-2xl">
-      <h2 className="text-2xl font-semibold mb-4">
+      <h2 className="text-2xl font-semibold mb-6">
         {editIndex !== null ? "Edit Product" : "Add Product"}
       </h2>
 
-      {/* Product ID */}
-      <input
-        type="text"
-        placeholder="Product ID"
-        value={product.productId}
-        onChange={(e) =>
-          setProduct({ ...product, productId: e.target.value })
-        }
-        className="border px-3 py-2 rounded w-full mb-3"
-      />
+      <div className="bg-white p-6 rounded-xl shadow border max-w-3xl">
+        
+        {/* ROW 1 */}
+        <div className="grid grid-cols-3 gap-4 items-center mb-4">
+          <label>Product ID</label>
+          <input
+            type="text"
+            value={product.productId}
+            onChange={(e) =>
+              setProduct({ ...product, productId: e.target.value })
+            }
+            className="col-span-2 border px-3 py-2 rounded"
+          />
+        </div>
 
-      {/* Product Name */}
-      <input
-        type="text"
-        placeholder="Product Name"
-        value={product.productName}
-        onChange={(e) =>
-          setProduct({ ...product, productName: e.target.value })
-        }
-        className="border px-3 py-2 rounded w-full mb-4"
-      />
+        {/* ROW 2 */}
+        <div className="grid grid-cols-3 gap-4 items-center mb-4">
+          <label>Product Name</label>
+          <input
+            type="text"
+            value={product.productName}
+            onChange={(e) =>
+              setProduct({ ...product, productName: e.target.value })
+            }
+            className="col-span-2 border px-3 py-2 rounded"
+          />
+        </div>
 
-      {/* BOM TABLE */}
-      <table className="w-full bg-white border rounded">
-        <thead>
-          <tr className="bg-gray-50">
-            <th className="border px-3 py-2">Material</th>
-            <th className="border px-3 py-2">Qty</th>
-            <th className="border px-3 py-2">Action</th>
-          </tr>
-        </thead>
+        {/* BUTTONS */}
+        <div className="flex justify-end gap-3 mt-4">
+          <button
+            onClick={saveProduct}
+            className="bg-blue-600 text-white px-5 py-2 rounded"
+          >
+            Save
+          </button>
 
-        <tbody>
-          {product.bom.map((row, index) => (
-            <tr key={index}>
-              <td className="border px-3 py-2">
-                <select
-                  value={row.material}
-                  onChange={(e) =>
-                    handleChange(index, "material", e.target.value)
-                  }
-                  className="w-full border rounded px-2 py-1"
-                >
-                  <option value="">Select Material</option>
-
-                  {rawMaterials.map((rm, i) => (
-                    <option key={i} value={rm["Material Name"]}>
-                      {rm["Material Name"]} (
-                      {rm["Available Quantity"]})
-                    </option>
-                  ))}
-                </select>
-              </td>
-
-              <td className="border px-3 py-2">
-                <input
-                  type="number"
-                  value={row.qty}
-                  onChange={(e) =>
-                    handleChange(index, "qty", e.target.value)
-                  }
-                  className="w-full border rounded px-2 py-1"
-                />
-              </td>
-
-              <td className="border text-center">
-                <button
-                  onClick={() => {
-                    const updated = product.bom.filter(
-                      (_, i) => i !== index
-                    );
-                    setProduct({ ...product, bom: updated });
-                  }}
-                  className="text-red-600"
-                >
-                  ❌
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* BUTTONS */}
-      <div className="flex gap-3 mt-4">
-        <button
-          onClick={addMaterial}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          + Add Material
-        </button>
-
-        <button
-          onClick={saveProduct}
-          className="bg-black text-white px-4 py-2 rounded"
-        >
-          Save
-        </button>
-
-        <button
-          onClick={resetForm}
-          className="bg-gray-400 text-white px-4 py-2 rounded"
-        >
-          Cancel
-        </button>
+          <button
+            onClick={resetForm}
+            className="bg-gray-400 text-white px-5 py-2 rounded"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
