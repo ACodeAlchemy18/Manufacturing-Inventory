@@ -175,6 +175,29 @@ export default function RawMaterials() {
     setRows(updatedRows);
   };
 
+
+
+
+// Reduce available quantity of a material
+const reduceMaterialQuantity = (materialId, quantityToReduce) => {
+  const data = JSON.parse(localStorage.getItem("rawMaterials")) || [];
+
+  const updated = data.map((item) => {
+    if (String(item["Material ID"]) === String(materialId)) {
+      const available = Number(item["Available Quantity"]) || 0;
+      item["Available Quantity"] = Math.max(available - Number(quantityToReduce), 0);
+
+      const lowStockThreshold = Number(item["Low Stock"]) || 0;
+      if (item["Available Quantity"] === 0) item["Stock Status"] = "Out of Stock";
+      else if (item["Available Quantity"] <= lowStockThreshold) item["Stock Status"] = "Low Stock";
+      else item["Stock Status"] = "In Stock";
+    }
+    return item;
+  });
+
+  localStorage.setItem("rawMaterials", JSON.stringify(updated));
+};
+
   /* ===============================
         VIEW MODE
   =============================== */

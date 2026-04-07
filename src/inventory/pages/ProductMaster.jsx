@@ -8,7 +8,8 @@ export default function ProductMaster() {
   const [product, setProduct] = useState({
     productId: "",
     productName: "",
-    status: "Pending",
+    status: "Pending",      // For enabling/disabling buttons
+    stage: "Product Master", // Current stage
   });
 
   /* ================= LOAD DATA ================= */
@@ -19,18 +20,18 @@ export default function ProductMaster() {
 
   /* ================= SAVE PRODUCT ================= */
   const saveProduct = () => {
-    let updated;
-
     if (!product.productId || !product.productName) {
       alert("Please fill all fields");
       return;
     }
 
+    let updated;
+
     if (editIndex !== null) {
       updated = [...products];
       updated[editIndex] = product;
     } else {
-      updated = [...products, { ...product, status: "Pending" }];
+      updated = [...products, { ...product, status: "Pending", stage: "Product Master" }];
     }
 
     setProducts(updated);
@@ -54,20 +55,17 @@ export default function ProductMaster() {
     localStorage.setItem("products", JSON.stringify(updated));
   };
 
-  /* ================= MOVE TO WIP ================= */
+  /* ================= MOVE TO WIP (Pre-Assembling) ================= */
   const moveToWIP = (index) => {
     let updatedProducts = [...products];
-
     const prod = updatedProducts[index];
 
-    // prevent duplicate move
     if (prod.status === "Moved") {
       alert("Already moved to WIP");
       return;
     }
 
-    const existingWIP =
-      JSON.parse(localStorage.getItem("preAssembling")) || [];
+    const existingWIP = JSON.parse(localStorage.getItem("preAssembling")) || [];
 
     const newItem = {
       wipId: Date.now(),
@@ -77,29 +75,48 @@ export default function ProductMaster() {
       status: "In Progress",
     };
 
-    // update WIP
+    // Update WIP
     const updatedWIP = [...existingWIP, newItem];
     localStorage.setItem("preAssembling", JSON.stringify(updatedWIP));
 
-    // update product status
+    // Update product
     updatedProducts[index].status = "Moved";
+    updatedProducts[index].stage = "Pre-Assembling";
 
     setProducts(updatedProducts);
     localStorage.setItem("products", JSON.stringify(updatedProducts));
 
-    alert("Moved to WIP 🚀");
+    alert("Moved to Pre-Assembling 🚀");
   };
 
-  /* ================= RESET ================= */
+
+
+  
+
+  /* ================= RESET FORM ================= */
   const resetForm = () => {
     setProduct({
       productId: "",
       productName: "",
       status: "Pending",
+      stage: "Product Master",
     });
     setEditIndex(null);
     setIsAdding(false);
   };
+
+
+
+  // Call this whenever the product moves to a new stage
+const updateProductStage = (productId, newStage) => {
+  const updatedProducts = products.map((p) =>
+    p.productId === productId ? { ...p, stage: newStage } : p
+  );
+  setProducts(updatedProducts);
+  localStorage.setItem("products", JSON.stringify(updatedProducts));
+};
+
+
 
   /* ================= VIEW MODE ================= */
   if (!isAdding) {
@@ -107,7 +124,6 @@ export default function ProductMaster() {
       <div className="p-8 bg-gray-100 rounded-2xl">
         <div className="flex justify-between mb-6">
           <h2 className="text-2xl font-semibold">Product Master</h2>
-
           <button
             onClick={() => setIsAdding(true)}
             className="bg-blue-600 text-white px-5 py-2 rounded-lg"
@@ -122,6 +138,7 @@ export default function ProductMaster() {
               <tr>
                 <th className="border px-3 py-2">Product ID</th>
                 <th className="border px-3 py-2">Product Name</th>
+                <th className="border px-3 py-2">Current Stage</th>
                 <th className="border px-3 py-2">Status</th>
                 <th className="border px-3 py-2">Action</th>
               </tr>
@@ -130,7 +147,7 @@ export default function ProductMaster() {
             <tbody>
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-4">
+                  <td colSpan="5" className="p-4">
                     No Products Found
                   </td>
                 </tr>
@@ -139,6 +156,13 @@ export default function ProductMaster() {
                   <tr key={i}>
                     <td className="border px-3 py-2">{p.productId}</td>
                     <td className="border px-3 py-2">{p.productName}</td>
+
+                    {/* CURRENT STAGE */}
+                    <td className="border px-3 py-2">
+                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                        {p.stage}
+                      </span>
+                    </td>
 
                     {/* STATUS */}
                     <td className="border px-3 py-2">
@@ -164,9 +188,7 @@ export default function ProductMaster() {
                             : "bg-green-600"
                         }`}
                       >
-                        {p.status === "Moved"
-                          ? "Moved"
-                          : "Move to WIP"}
+                        {p.status === "Moved" ? "Moved" : "Move to WIP"}
                       </button>
 
                       <button
@@ -193,8 +215,7 @@ export default function ProductMaster() {
     );
   }
 
-  /* ================= FORM ================= */
-
+  /* ================= ADD/EDIT FORM ================= */
   return (
     <div className="p-8 bg-gray-100 rounded-2xl">
       <h2 className="text-2xl font-semibold mb-6">
@@ -202,7 +223,6 @@ export default function ProductMaster() {
       </h2>
 
       <div className="bg-white p-6 rounded-xl shadow border max-w-3xl">
-        
         {/* ROW 1 */}
         <div className="grid grid-cols-3 gap-4 items-center mb-4">
           <label>Product ID</label>

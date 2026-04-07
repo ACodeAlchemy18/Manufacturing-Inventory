@@ -27,6 +27,38 @@ export default function PreAssembling() {
     qcRemarks: "",
   });
 
+// ✅ Reduce quantity in rawMaterials
+const reduceRawMaterialQty = (materialName, qtyToReduce) => {
+  const updatedRawMaterials = rawMaterials.map((mat) => {
+    if (mat["Material Name"] === materialName) {
+      const available = Number(mat["Available Quantity"]) || 0;
+      const lowStockThreshold = Number(mat["Low Stock"]) || 0;
+
+      const newQty = Math.max(available - Number(qtyToReduce), 0);
+
+      return {
+        ...mat,
+        "Available Quantity": newQty,
+        "Stock Status":
+          newQty === 0
+            ? "Out of Stock"
+            : newQty <= lowStockThreshold
+            ? "Low Stock"
+            : "In Stock",
+      };
+    }
+    return mat;
+  });
+
+  setRawMaterials(updatedRawMaterials);
+  localStorage.setItem("rawMaterials", JSON.stringify(updatedRawMaterials));
+};
+
+
+
+
+
+
   // ✅ Load data from localStorage
   useEffect(() => {
     setSavedData(JSON.parse(localStorage.getItem("preAssembling")) || []);
@@ -51,28 +83,31 @@ export default function PreAssembling() {
     setEditIndex(null);
   };
 
-  // ================= ADD MATERIAL =================
-  const addMaterial = () => {
-    if (!selectedMaterial || !quantity) return;
+ 
+const addMaterial = () => {
+  if (!selectedMaterial || !quantity) return;
 
-    setMaterialList([
-      ...materialList,
-      {
-        material: selectedMaterial,
-        qty: Number(quantity),
-        usableQty: 0,
-        usableReason: "",
-        usableCustomReason: "",
-        unusableQty: 0,
-        unusableReason: "",
-        unusableCustomReason: "",
-        outputQty: Number(quantity),
-      },
-    ]);
-    setSelectedMaterial("");
-    setQuantity("");
-  };
+  setMaterialList([
+    ...materialList,
+    {
+      material: selectedMaterial,
+      qty: Number(quantity),
+      usableQty: 0,
+      usableReason: "",
+      usableCustomReason: "",
+      unusableQty: 0,
+      unusableReason: "",
+      unusableCustomReason: "",
+      outputQty: Number(quantity),
+    },
+  ]);
 
+  // ✅ Reduce quantity in Raw Materials
+  reduceMaterialQuantity(selectedMaterial, quantity);
+
+  setSelectedMaterial("");
+  setQuantity("");
+};
   // ================= DELETE MATERIAL =================
   const deleteMaterial = (i) => {
     setMaterialList(materialList.filter((_, index) => index !== i));
@@ -156,20 +191,44 @@ export default function PreAssembling() {
   };
 
   // ================= MOVE TO PHOSPHATING =================
-  const moveToPhosphating = (product) => {
-    const index = savedData.findIndex(
-      (d) => String(d["Product ID"]) === String(product.productId)
-    );
-    if (index === -1) return;
+const moveToPhosphating = (product) => {
+  // 1️⃣ Find product in preAssembling savedData
+  const index = savedData.findIndex(
+    (d) => String(d["Product ID"]) === String(product.productId)
+  );
+  if (index === -1) return;
 
-    const updated = [...savedData];
-    updated[index]["Process Stage"] = "Phosphating";
-    updated[index]["Current Status"] = "Pending";
-    setSavedData(updated);
-    localStorage.setItem("preAssembling", JSON.stringify(updated));
+  const updatedSavedData = [...savedData];
+  updatedSavedData[index]["Process Stage"] = "Phosphating";
+  updatedSavedData[index]["Current Status"] = "Pending";
 
-    alert(`${product.productName} moved to Phosphating!`);
-  };
+  setSavedData(updatedSavedData);
+  localStorage.setItem("preAssembling", JSON.stringify(updatedSavedData));
+
+  // 2️⃣ Add this product to Phosphating storage
+  const phosphatingData = JSON.parse(localStorage.getItem("phosphating")) || [];
+  const alreadyExists = phosphatingData.find(
+    (p) => p["Product ID"] === String(product.productId)
+  );
+
+  if (!alreadyExists) {
+    phosphatingData.push(updatedSavedData[index]); // move current preAssembling entry
+    localStorage.setItem("phosphating", JSON.stringify(phosphatingData));
+  }
+
+  // 3️⃣ Update main products array stage
+  const updatedProducts = products.map((p) =>
+    p.productId === product.productId
+      ? { ...p, stage: "Phosphating" }
+      : p
+  );
+  setProducts(updatedProducts);
+  localStorage.setItem("products", JSON.stringify(updatedProducts));
+
+  alert(`${product.productName} moved to Phosphating!`);
+};
+
+
 
   // ================= RENDER =================
   if (isViewing && viewData) {

@@ -55,30 +55,106 @@ export default function Phosphating() {
     setShowForm(true);
   };
 
-  /* ================= ADD MATERIAL ================= */
-  const addMaterial = () => {
-    if (!selectedMaterial || !quantity) return;
+ /* ================= ADD MATERIAL ================= */
+const addMaterial = () => {
+  if (!selectedMaterial || !quantity) return;
 
-    setMaterialList([
-      ...materialList,
-      {
-        material: selectedMaterial,
-        qty: Number(quantity),
-        usableQty: 0,
-        unusableQty: 0,
-        outputQty: Number(quantity),
-      },
-    ]);
+  const qtyToAdd = Number(quantity);
 
-    setSelectedMaterial("");
-    setQuantity("");
-  };
+  // 1️⃣ Add to Phosphating material list
+  setMaterialList([
+    ...materialList,
+    {
+      material: selectedMaterial,
+      qty: qtyToAdd,
+      usableQty: 0,
+      unusableQty: 0,
+      outputQty: qtyToAdd,
+    },
+  ]);
 
-  /* ================= DELETE MATERIAL ================= */
-  const deleteMaterial = (index) => {
-    const updated = materialList.filter((_, i) => i !== index);
-    setMaterialList(updated);
-  };
+  // 2️⃣ Reduce quantity from Pre-Assembling
+  const updatedSavedData = [...savedData];
+  const productIndex = updatedSavedData.findIndex(
+    (d) => d["Product ID"] === selectedProduct["Product ID"]
+  );
+
+  if (productIndex !== -1) {
+    const preMaterials = updatedSavedData[productIndex].materials || [];
+    const materialIndex = preMaterials.findIndex(
+      (m) => m.material === selectedMaterial
+    );
+
+    if (materialIndex !== -1) {
+      preMaterials[materialIndex].qty = Math.max(
+        0,
+        Number(preMaterials[materialIndex].qty || 0) - qtyToAdd
+      );
+    }
+
+    updatedSavedData[productIndex].materials = preMaterials;
+    setSavedData(updatedSavedData);
+    localStorage.setItem("preAssembling", JSON.stringify(updatedSavedData));
+  }
+
+  // 3️⃣ Reduce quantity from global Raw Materials using the reusable function
+  // 3️⃣ Reduce quantity from global Raw Materials
+const materialObj = rawMaterials.find(
+  (rm) => rm["Material Name"] === selectedMaterial
+);
+
+if (materialObj) {
+  // Ensure type matches: convert both sides to string
+  const materialId = String(materialObj["Material ID"]);
+
+  reduceMaterialQuantity(materialId, qtyToAdd);
+
+  // Refresh state after updating localStorage
+  const updatedRawMaterials = JSON.parse(localStorage.getItem("rawMaterials")) || [];
+  setRawMaterials(updatedRawMaterials);
+}
+  // 4️⃣ Reset form inputs
+  setSelectedMaterial("");
+  setQuantity("");
+};
+
+
+
+
+const deleteMaterial = (index) => {
+  const removedMaterial = materialList[index];
+  const updated = materialList.filter((_, i) => i !== index);
+  setMaterialList(updated);
+
+  // Restore quantity back to Pre-Assembling
+  const updatedSavedData = [...savedData];
+  const productIndex = updatedSavedData.findIndex(
+    (d) => d["Product ID"] === selectedProduct["Product ID"]
+  );
+
+  if (productIndex !== -1) {
+    const preMaterials = updatedSavedData[productIndex].materials || [];
+    const materialIndex = preMaterials.findIndex(
+      (m) => m.material === removedMaterial.material
+    );
+
+    if (materialIndex !== -1) {
+      preMaterials[materialIndex].qty += removedMaterial.qty;
+    }
+
+    updatedSavedData[productIndex].materials = preMaterials;
+    setSavedData(updatedSavedData);
+    localStorage.setItem("preAssembling", JSON.stringify(updatedSavedData));
+  }
+};
+
+
+
+
+
+
+
+
 
   /* ================= SAVE PHOSPHATING ================= */
   const handleSave = () => {
