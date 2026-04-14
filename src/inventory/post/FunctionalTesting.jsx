@@ -19,39 +19,52 @@ export default function FunctionalTesting() {
     remarks: "",
   });
 
-  /* ================= LOAD DATA ================= */
-  useEffect(() => {
-    const qc =
-      JSON.parse(localStorage.getItem("qualityInspection")) || [];
+useEffect(() => {
+  const qc =
+    JSON.parse(localStorage.getItem("qualityInspection")) || [];
 
-    const ft =
-      JSON.parse(localStorage.getItem("functionalTesting")) || [];
+  const ft =
+    JSON.parse(localStorage.getItem("functionalTesting")) || [];
 
-    setSavedData(ft);
+  setSavedData(ft);
 
-    // Only PASS products
-    const filtered = qc.filter((item) => item.status === "Pass");
+  // ✅ Only PASS + NOT MOVED products
+const filtered = qc.filter(
+  (item) =>
+    item.status === "Pass" &&
+    item.currentStatus !== "Completed"
+    // OPTIONAL:
+    // && !item.testDone   // 🔥 if you want hide tested items
+);
 
-    setQcData(filtered);
-  }, []);
+  setQcData(filtered);
+}, []);
 
-  /* ================= OPEN FORM ================= */
-  const handleTest = (product) => {
-    setSelectedProduct(product);
 
-    setFormData({
-      testId: `FT${Date.now()}`,
-      product: product.product,
-      batch: product.batch,
-      testedBy: "",
-      date: new Date().toISOString().split("T")[0],
-      functionality: "",
-      performance: "",
-      safety: "",
-      result: "",
-      remarks: "",
-    });
-  };
+ const handleTest = (product) => {
+  setSelectedProduct(product);
+
+  // 🔍 Check if test already exists for this batch
+  const existing = savedData.find(
+    (f) => f.batch === product.batch
+  );
+
+  setFormData({
+    testId: existing ? existing.testId : `FT${Date.now()}`,
+    product: product.product,
+    batch: product.batch,
+     productId: product.productId, // ✅ ADD THIS
+    testedBy: existing?.testedBy || "",
+    date:
+      existing?.date ||
+      new Date().toISOString().split("T")[0],
+    functionality: existing?.functionality || "",
+    performance: existing?.performance || "",
+    safety: existing?.safety || "",
+    result: existing?.result || "",
+    remarks: existing?.remarks || "",
+  });
+};
 
   /* ================= VIEW ================= */
   const handleView = (product) => {
@@ -70,27 +83,169 @@ export default function FunctionalTesting() {
     setFormData({ ...formData, [field]: value });
   };
 
-  /* ================= SAVE ================= */
-  const handleSave = () => {
-    let updated;
+const handleSave = () => {
+  let updated;
 
-    const index = savedData.findIndex(
-      (item) => item.testId === formData.testId
+  // 🔥 IMPORTANT FIX
+  if (!formData.productId && selectedProduct) {
+    formData.productId = selectedProduct.productId;
+  }
+
+  const index = savedData.findIndex(
+    (item) => item.batch === formData.batch
+  );
+
+  if (index !== -1) {
+    updated = [...savedData];
+    updated[index] = formData;
+  } else {
+    updated = [...savedData, formData];
+  }
+
+  setSavedData(updated);
+  localStorage.setItem("functionalTesting", JSON.stringify(updated));
+
+  // 🔥 MARK QC AS TESTED
+  const qc =
+    JSON.parse(localStorage.getItem("qualityInspection")) || [];
+
+  const updatedQC = qc.map((item) => {
+    if (item.batch === formData.batch) {
+      return {
+        ...item,
+        testDone: true,
+      };
+    }
+    return item;
+  });
+
+  localStorage.setItem("qualityInspection", JSON.stringify(updatedQC));
+
+  // 🔥 REFRESH TABLE
+  const filtered = updatedQC.filter(
+    (item) =>
+      item.status === "Pass" &&
+      item.currentStatus !== "Completed"
+  );
+
+  setQcData(filtered);
+
+  alert("Test Saved ✅");
+  setSelectedProduct(null);
+};
+
+//handleMove
+ /* ================= MOVE ================= */
+const handleMove = (product) => {
+  const ft = savedData.find(
+    (f) => f.batch === product.batch
+  );
+
+  if (!ft) {
+    alert("Functional Testing not done ❌");
+    return;
+  }
+
+  if (!ft.result) {
+    alert("Please complete test result ⚠️");
+    return;
+  }
+
+  // ================= PASS → PACKAGING =================
+  if (ft.result === "Pass") {
+    const existingPackaging =
+      JSON.parse(localStorage.getItem("packaging")) || [];
+
+    const newPack = {
+      packId: `P${Date.now()}`,
+      product: ft.product,
+      batch: ft.batch,
+      status: "Pending",
+      date: new Date().toISOString().split("T")[0],
+    };
+
+    localStorage.setItem(
+      "packaging",
+      JSON.stringify([...existingPackaging, newPack])
     );
 
-    if (index !== -1) {
-      updated = [...savedData];
-      updated[index] = formData;
-    } else {
-      updated = [...savedData, formData];
-    }
+     // 🔥 UPDATE PRODUCT MASTER
+  updateProductStage(ft.productId, "Packaging");
+    alert("Moved to Packaging 📦");
+  }
 
-    setSavedData(updated);
-    localStorage.setItem("functionalTesting", JSON.stringify(updated));
+  // ================= FAIL → REWORK =================
+  else if (ft.result === "Fail") {
+  const existingRework =
+    JSON.parse(localStorage.getItem("rework")) || [];
 
-    alert("Test Saved ✅");
-    setSelectedProduct(null);
+  const reworkItem = {
+    reworkId: `R${Date.now()}`,
+    product: ft.product,
+    batch: ft.batch,
+    reason: ft.remarks || "Functional Test Failed",
+    status: "Pending",
+    date: new Date().toISOString().split("T")[0],
+    source: "Functional Testing", // 🔥 FIX
   };
+
+  localStorage.setItem(
+    "rework",
+    JSON.stringify([...existingRework, reworkItem])
+  );
+
+  // 🔥 UPDATE PRODUCT MASTER
+  updateProductStage(ft.productId, "Rework");
+  
+  alert("Moved to Rework 🔧");
+}
+
+  // 🔥 IMPORTANT: MARK QC AS COMPLETED
+  const qcData =
+    JSON.parse(localStorage.getItem("qualityInspection")) || [];
+
+  const updatedQC = qcData.map((item) => {
+    if (item.batch === product.batch) {
+      return {
+        ...item,
+        currentStatus: "Completed",
+      };
+    }
+    return item;
+  });
+
+  localStorage.setItem("qualityInspection", JSON.stringify(updatedQC));
+
+  // ================= REMOVE FROM FUNCTIONAL TESTING =================
+  const updated = savedData.filter(
+    (item) => item.batch !== product.batch
+  );
+
+  setSavedData(updated);
+  localStorage.setItem("functionalTesting", JSON.stringify(updated));
+
+  // ================= UPDATE UI =================
+  setQcData((prev) =>
+    prev.filter((p) => p.batch !== product.batch)
+  );
+};
+
+
+
+//updateproduct stage
+const updateProductStage = (productId, newStage) => {
+  const products =
+    JSON.parse(localStorage.getItem("products")) || [];
+
+  const updated = products.map((p) =>
+    p.productId === productId
+      ? { ...p, stage: newStage }
+      : p
+  );
+
+  localStorage.setItem("products", JSON.stringify(updated));
+};
+
 
   /* ================= EDIT ================= */
   const handleEdit = (data) => {
@@ -104,182 +259,220 @@ export default function FunctionalTesting() {
   };
 
   /* ================= DELETE ================= */
-  const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Delete?");
-    if (!confirmDelete) return;
+ const handleDelete = (id) => {
+  const confirmDelete = window.confirm("Delete?");
+  if (!confirmDelete) return;
 
-    const updated = savedData.filter((item) => item.testId !== id);
+  // remove from savedData
+  const updated = savedData.filter((item) => item.testId !== id);
 
-    setSavedData(updated);
-    localStorage.setItem("functionalTesting", JSON.stringify(updated));
+  setSavedData(updated);
+  localStorage.setItem("functionalTesting", JSON.stringify(updated));
 
-    alert("Deleted ✅");
-    setViewData(null);
-  };
+  // 🔥 ALSO refresh qcData (table data)
+  const qc =
+    JSON.parse(localStorage.getItem("qualityInspection")) || [];
+
+  const filtered = qc.filter(
+    (item) =>
+      item.status === "Pass" &&
+      item.currentStatus !== "Completed"
+  );
+
+  setQcData(filtered);
+
+  alert("Deleted ✅");
+  setViewData(null);
+};
 
  if (viewData) {
   return (
-    <div className="p-8 bg-gray-100 rounded-2xl">
-      <div className="bg-white p-6 rounded-xl shadow">
+  <div className="min-h-screen bg-gray-100 p-8">
+    <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6">
 
-        <h2 className="text-2xl font-semibold mb-6">
-          Functional Test Details
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6 border-b pb-3">
+        <h2 className="text-2xl font-semibold text-gray-700">
+          Functional Testing - {viewData.product}
         </h2>
 
-        <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">
-          
-          <thead className="bg-purple-100">
+        <button
+          onClick={() => setViewData(null)}
+          className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded"
+        >
+          Back
+        </button>
+      </div>
+
+      {/* TABLE */}
+      <div className="overflow-x-auto border rounded-lg">
+        <table className="min-w-[1200px] w-full text-sm">
+
+          {/* HEADER */}
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
-              <th className="p-3 border text-left">Field</th>
-              <th className="p-3 border text-left">Value</th>
+              <th className="px-4 py-3">Test ID</th>
+              <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">Batch</th>
+              <th className="px-4 py-3">Tested By</th>
+              <th className="px-4 py-3">Date</th>
+              <th className="px-4 py-3">Functionality</th>
+              <th className="px-4 py-3">Performance</th>
+              <th className="px-4 py-3">Safety</th>
+              <th className="px-4 py-3">Result</th>
+              <th className="px-4 py-3">Remarks</th>
+              <th className="px-4 py-3 text-center">Action</th>
             </tr>
           </thead>
 
+          {/* BODY */}
           <tbody>
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Test ID</td>
-              <td className="p-3 border">{viewData.testId}</td>
-            </tr>
+            <tr className="border-t hover:bg-gray-50">
 
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Product</td>
-              <td className="p-3 border">{viewData.product}</td>
-            </tr>
+              <td className="px-4 py-3">{viewData.testId}</td>
+              <td className="px-4 py-3">{viewData.product}</td>
+              <td className="px-4 py-3">{viewData.batch}</td>
+              <td className="px-4 py-3">{viewData.testedBy || "-"}</td>
+              <td className="px-4 py-3">{viewData.date || "-"}</td>
+              <td className="px-4 py-3">{viewData.functionality || "-"}</td>
+              <td className="px-4 py-3">{viewData.performance || "-"}</td>
+              <td className="px-4 py-3">{viewData.safety || "-"}</td>
 
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Batch</td>
-              <td className="p-3 border">{viewData.batch}</td>
-            </tr>
-
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Tested By</td>
-              <td className="p-3 border">{viewData.testedBy}</td>
-            </tr>
-
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Date</td>
-              <td className="p-3 border">{viewData.date}</td>
-            </tr>
-
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Functionality</td>
-              <td className="p-3 border">{viewData.functionality}</td>
-            </tr>
-
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Performance</td>
-              <td className="p-3 border">{viewData.performance}</td>
-            </tr>
-
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Safety</td>
-              <td className="p-3 border">{viewData.safety}</td>
-            </tr>
-
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Result</td>
-              <td
-                className={`p-3 border font-semibold ${
-                  viewData.result === "Pass"
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {viewData.result}
+              {/* RESULT BADGE */}
+              <td className="px-4 py-3">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    viewData.result === "Pass"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {viewData.result || "-"}
+                </span>
               </td>
-            </tr>
 
-            <tr className="hover:bg-gray-50">
-              <td className="p-3 border font-medium">Remarks</td>
-              <td className="p-3 border">{viewData.remarks}</td>
+              <td className="px-4 py-3">
+                {viewData.remarks || "-"}
+              </td>
+
+              {/* ACTION */}
+              <td className="px-4 py-3 text-center">
+                <div className="flex justify-center gap-2">
+
+                  <button
+                    onClick={() => handleEdit(viewData)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded text-xs"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(viewData.testId)}
+                    className="bg-red-600 text-white px-3 py-1 rounded text-xs"
+                  >
+                    Delete
+                  </button>
+
+                </div>
+              </td>
+
             </tr>
           </tbody>
 
         </table>
-
-        {/* BUTTONS */}
-        <div className="mt-6 flex gap-3">
-          <button
-            onClick={() => handleEdit(viewData)}
-            className="bg-yellow-500 text-white px-4 py-2 rounded"
-          >
-            Edit
-          </button>
-
-          <button
-            onClick={() => handleDelete(viewData.testId)}
-            className="bg-red-600 text-white px-4 py-2 rounded"
-          >
-            Delete
-          </button>
-
-          <button
-            onClick={() => setViewData(null)}
-            className="bg-gray-600 text-white px-4 py-2 rounded"
-          >
-            Back
-          </button>
-        </div>
-
       </div>
+
     </div>
-  );
+  </div>
+);
 }
 
   /* ================= LIST ================= */
   if (!selectedProduct) {
   return (
-    <div className="p-8 bg-gray-100 rounded-2xl">
-      <h2 className="text-2xl font-semibold mb-6">
+  <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6">
+
+      {/* HEADER */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-6">
         Functional Testing
       </h2>
 
-      <table className="min-w-full bg-white rounded-xl shadow">
-        <thead className="bg-purple-100">
-          <tr>
-            <th className="p-3 border">Product ID</th>
-            <th className="p-3 border">Product Name</th>
-            <th className="p-3 border">Action</th>
-          </tr>
-        </thead>
+      {/* TABLE */}
+      <div className="overflow-hidden rounded-lg border">
+        <table className="w-full text-sm text-left">
 
-        <tbody>
-          {qcData.length === 0 ? (
+          {/* HEADER */}
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
-              <td colSpan="3" className="text-center p-4">
-                No Data Available
-              </td>
+              <th className="px-4 py-3">Product ID</th>
+              <th className="px-4 py-3">Product Name</th>
+              <th className="px-4 py-3 text-center">Actions</th>
             </tr>
-          ) : (
-            qcData.map((p, i) => (
-              <tr key={i}>
-                <td className="border p-2">{p.batch}</td>
-                <td className="border p-2">{p.product}</td>
+          </thead>
 
-                <td className="border p-2 space-x-2 text-center">
-
-                  <button
-                    onClick={() => handleTest(p)}
-                    className="bg-blue-600 text-white px-3 py-1 rounded"
-                  >
-                    Test
-                  </button>
-
-                  <button
-                    onClick={() => handleView(p)}
-                    className="bg-gray-600 text-white px-3 py-1 rounded"
-                  >
-                    View
-                  </button>
-
+          {/* BODY */}
+          <tbody>
+            {qcData.length === 0 ? (
+              <tr>
+                <td colSpan="3" className="text-center py-6 text-gray-400">
+                  No Products Available
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              qcData.map((p, i) => (
+                <tr
+                  key={i}
+                  className="border-t hover:bg-gray-50 transition"
+                >
+                  {/* PRODUCT ID */}
+                  <td className="px-6 py-4 font-medium text-gray-700">
+                    {p.batch}
+                  </td>
+
+                  {/* PRODUCT NAME */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {p.product}
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-3">
+
+                      <button
+                        onClick={() => handleTest(p)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Test
+                      </button>
+
+                      <button
+                        onClick={() => handleView(p)}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => handleMove(p)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Move
+                      </button>
+
+                    </div>
+                  </td>
+
+                </tr>
+              ))
+            )}
+          </tbody>
+
+        </table>
+      </div>
     </div>
-  );
+  </div>
+);
 }
 
   /* ================= FORM ================= */

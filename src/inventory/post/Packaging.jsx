@@ -1,317 +1,448 @@
 import { useState, useEffect } from "react";
 
 export default function Packaging() {
-  const [isEditing, setIsEditing] = useState(false);
+  const [packData, setPackData] = useState([]);
   const [savedData, setSavedData] = useState([]);
-  const [testData, setTestData] = useState([]);
 
-  const [columns] = useState([
-    { name: "Package ID", type: "text" },
-    { name: "Product", type: "dropdown" },
-    { name: "Batch", type: "text" },
-    { name: "Packaging Type", type: "text" },
-    {
-      name: "Status",
-      type: "dropdown",
-      options: ["Pending", "Completed"],
-    },
-    { name: "Packed By", type: "text" },
-    { name: "Date", type: "date" },
-    { name: "Remarks", type: "text" },
-  ]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [viewData, setViewData] = useState(null);
 
-  const [rows, setRows] = useState([]);
+  const [formData, setFormData] = useState({
+    packId: "",
+    product: "",
+    batch: "",
+    packingType: "",
+    material: "",
+    packedBy: "",
+    date: "",
+    qty: "",
+    status: "",
+  });
 
-  /* ================= LOAD ================= */
-
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
-    const pack = localStorage.getItem("packagingData");
-    if (pack) setSavedData(JSON.parse(pack));
+    const pack = JSON.parse(localStorage.getItem("packaging")) || [];
+    const saved = JSON.parse(localStorage.getItem("packagingData")) || [];
 
-    const ft =
-      JSON.parse(localStorage.getItem("functionalTesting")) || [];
-
-    const passedItems = ft.filter((item) => item.Result === "Pass");
-
-    setTestData(passedItems);
+    setPackData(pack);
+    setSavedData(saved);
   }, []);
 
-  /* ================= ADD ROW ================= */
+  /* ================= OPEN FORM ================= */
+  const handlePack = (product) => {
+    setSelectedProduct(product);
 
-  const addRow = () => {
-    const newRow = {};
-    columns.forEach((col) => {
-      if (col.name === "Package ID") {
-        newRow[col.name] = `PKG${Date.now()}`;
-      } else if (col.name === "Status") {
-        newRow[col.name] = "Pending";
-      } else {
-        newRow[col.name] = "";
-      }
+    setFormData({
+      packId: `P${Date.now()}`,
+      product: product.product,
+      batch: product.batch,
+       productId: product.productId, // ✅ ADD THIS
+      packingType: "",
+      material: "",
+      packedBy: "",
+      date: new Date().toISOString().split("T")[0],
+      qty: "",
+      status: "Packed",
     });
-    setRows([...rows, newRow]);
   };
 
   /* ================= HANDLE CHANGE ================= */
-
-  const handleChange = (rowIndex, columnName, value) => {
-    const updatedRows = [...rows];
-
-    updatedRows[rowIndex] = {
-      ...updatedRows[rowIndex], // ✅ KEEP OLD DATA
-      [columnName]: value,      // ✅ UPDATE CURRENT FIELD
-    };
-
-    // AUTO FILL BATCH
-    if (columnName === "Product") {
-      const selected = testData.find((t) => t.Product === value);
-      if (selected) {
-        updatedRows[rowIndex]["Batch"] = selected.Batch;
-      }
-    }
-
-    setRows(updatedRows);
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
   };
 
   /* ================= SAVE ================= */
+ const handleSave = () => {
+  let updated;
 
-  const handleSave = () => {
-    const updated = [...savedData, ...rows];
+  const finalData = {
+    ...formData,
+    productId:
+      formData.productId || selectedProduct?.productId,
+  };
 
-    setSavedData(updated);
-    localStorage.setItem("packagingData", JSON.stringify(updated));
+  const index = savedData.findIndex(
+    (item) => item.packId === finalData.packId
+  );
 
-    // SEND COMPLETED TO DISPATCH
-    const completed = rows.filter((r) => r.Status === "Completed");
+  if (index !== -1) {
+    updated = [...savedData];
+    updated[index] = finalData;
+  } else {
+    updated = [...savedData, finalData];
+  }
 
-    if (completed.length > 0) {
-      const existing =
-        JSON.parse(localStorage.getItem("dispatchData")) || [];
+  setSavedData(updated);
+  localStorage.setItem("packagingData", JSON.stringify(updated));
 
-      const newDispatch = completed.map((p, index) => ({
-        "Dispatch ID": `D${Date.now()}${index}`,
-        Product: p.Product,
-        Batch: p.Batch,
-        Status: "Ready",
-        Date: new Date().toISOString().split("T")[0],
-      }));
+  alert("Saved Successfully ✅");
+  setSelectedProduct(null);
+};
 
-      localStorage.setItem(
-        "dispatchData",
-        JSON.stringify([...existing, ...newDispatch])
-      );
+//updateproductstege
+const updateProductStage = (productId, newStage) => {
+  const products =
+    JSON.parse(localStorage.getItem("products")) || [];
+
+  const updated = products.map((p) =>
+    p.productId === productId
+      ? { ...p, stage: newStage, status: newStage }
+      : p
+  );
+
+  localStorage.setItem("products", JSON.stringify(updated));
+};
+
+  /* ================= VIEW ================= */
+  const handleView = (product) => {
+    const data = savedData.find((p) => p.batch === product.batch);
+
+    if (!data) {
+      alert("No Packaging Data ❌");
+      return;
     }
 
-    alert("Packaging Saved & Sent to Dispatch 🚚");
-
-    setRows([]);
-    setIsEditing(false);
+    setViewData(data);
   };
 
-  /* ================= DELETE / EDIT ================= */
+  /* ================= MOVE ================= */
+const handleMove = (product) => {
+  const pack = savedData.find(
+    (p) => p.batch === product.batch
+  );
 
-  const deleteRow = (index) => {
-    const updated = savedData.filter((_, i) => i !== index);
-    setSavedData(updated);
-    localStorage.setItem("packagingData", JSON.stringify(updated));
+  if (!pack) {
+    alert("Packaging not done ❌");
+    return;
+  }
+
+  // 🔥 CHECK PACKING COMPLETED
+  if (!pack.status || pack.status !== "Packed") {
+    alert("Complete Packaging First ⚠️");
+    return;
+  }
+
+  // ================= MOVE → FINISHED GOODS =================
+  const finished =
+    JSON.parse(localStorage.getItem("finishedGoods")) || [];
+
+  const newFG = {
+    fgId: `FG${Date.now()}`,
+    product: pack.product,
+    batch: pack.batch,
+    qty: pack.qty,
+    packingType: pack.packingType,
+    status: "Ready",
+    date: new Date().toISOString().split("T")[0],
   };
 
-  const editRow = (index) => {
-    setRows([savedData[index]]);
-    setIsEditing(true);
+  localStorage.setItem(
+    "finishedGoods",
+    JSON.stringify([...finished, newFG])
+  );
 
-    const updated = savedData.filter((_, i) => i !== index);
-    setSavedData(updated);
-    localStorage.setItem("packagingData", JSON.stringify(updated));
-  };
+  // 🔥 UPDATE PRODUCT MASTER
+updateProductStage(pack.productId, "Finished Goods");
 
-  /* ================= VIEW MODE ================= */
+  // ================= REMOVE FROM PACKAGING =================
+  const updated = packData.filter(
+    (p) => p.batch !== product.batch
+  );
 
-  if (!isEditing) {
-    return (
-      <div className="bg-gray-100 p-8 rounded-2xl">
-        <div className="flex justify-between mb-6">
-          <h2 className="text-2xl font-semibold">Packaging</h2>
+  setPackData(updated);
+  localStorage.setItem("packaging", JSON.stringify(updated));
+
+
+  alert("Moved to Finished Goods ✅");
+};
+
+
+
+  /* ================= EDIT ================= */
+const handleEdit = (data) => {
+  setSelectedProduct(true);   // open form
+
+  setFormData({
+    ...data,                  // load full data into form
+  });
+
+  setViewData(null);          // close view page
+};
+
+
+  /* ================= DELETE ================= */
+const handleDelete = (id) => {
+  const confirmDelete = window.confirm("Are you sure to delete?");
+  if (!confirmDelete) return;
+
+  const updated = savedData.filter(
+    (item) => item.packId !== id
+  );
+
+  setSavedData(updated);
+  localStorage.setItem("packagingData", JSON.stringify(updated));
+
+  alert("Deleted Successfully ✅");
+  setViewData(null);
+};
+
+  /* ================= VIEW PAGE ================= */
+  if (viewData) {
+  return (
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6">
+
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-6 border-b pb-3">
+          <h2 className="text-2xl font-semibold text-gray-700">
+            Packaging - {viewData.product}
+          </h2>
 
           <button
-            onClick={() => setIsEditing(true)}
-            className="bg-purple-600 text-white px-5 py-2 rounded-lg"
+            onClick={() => setViewData(null)}
+            className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded"
           >
-            + Start Packaging
+            Back
           </button>
         </div>
 
-        <div className="overflow-auto bg-white rounded-xl border shadow-sm">
-          <table className="min-w-full text-sm">
-            <thead className="bg-purple-100">
+        {/* TABLE */}
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="min-w-[1000px] w-full text-sm">
+
+            {/* HEADER */}
+            <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
               <tr>
-                {columns.map((col, i) => (
-                  <th key={i} className="border px-4 py-2">
-                    {col.name}
-                  </th>
-                ))}
-                <th className="border px-4 py-2">Action</th>
+                <th className="px-4 py-3">Pack ID</th>
+                <th className="px-4 py-3">Product</th>
+                <th className="px-4 py-3">Batch</th>
+                <th className="px-4 py-3">Packing Type</th>
+                <th className="px-4 py-3">Material</th>
+                <th className="px-4 py-3">Packed By</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Qty</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-center">Action</th>
               </tr>
             </thead>
 
+            {/* BODY */}
             <tbody>
-              {savedData.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + 1} className="text-center p-4">
-                    No Packaging Data
-                  </td>
-                </tr>
-              ) : (
-                savedData.map((row, index) => (
-                  <tr key={index}>
-                    {columns.map((col, i) => {
-                      if (col.name === "Status") {
-                        const status = row[col.name] || "Pending";
+              <tr className="border-t hover:bg-gray-50">
 
-                        return (
-                          <td key={i} className="border px-3 py-2">
-                            <span
-                              className={`px-2 py-1 rounded text-white ${
-                                status === "Completed"
-                                  ? "bg-green-500"
-                                  : "bg-yellow-500"
-                              }`}
-                            >
-                              {status}
-                            </span>
-                          </td>
+                <td className="px-4 py-3">{viewData.packId}</td>
+                <td className="px-4 py-3">{viewData.product}</td>
+                <td className="px-4 py-3">{viewData.batch}</td>
+                <td className="px-4 py-3">{viewData.packingType || "-"}</td>
+                <td className="px-4 py-3">{viewData.material || "-"}</td>
+                <td className="px-4 py-3">{viewData.packedBy || "-"}</td>
+                <td className="px-4 py-3">{viewData.date || "-"}</td>
+                <td className="px-4 py-3">{viewData.qty || "-"}</td>
+
+                {/* STATUS BADGE */}
+                <td className="px-4 py-3">
+                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
+                    {viewData.status || "Packed"}
+                  </span>
+                </td>
+
+                {/* ACTION */}
+                <td className="px-4 py-3 text-center">
+                  <div className="flex justify-center gap-2">
+
+                    {/* EDIT */}
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(true);
+                        setFormData(viewData);
+                        setViewData(null);
+                      }}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded text-xs"
+                    >
+                      Edit
+                    </button>
+
+                    {/* DELETE */}
+                    <button
+                      onClick={() => {
+                        const confirmDelete = window.confirm("Delete?");
+                        if (!confirmDelete) return;
+
+                        const updated = savedData.filter(
+                          (item) => item.packId !== viewData.packId
                         );
-                      }
 
-                      return (
-                        <td key={i} className="border px-3 py-2">
-                          {row[col.name]}
-                        </td>
-                      );
-                    })}
+                        setSavedData(updated);
+                        localStorage.setItem("packagingData", JSON.stringify(updated));
 
-                    <td className="border text-center space-x-2">
-                      <button
-                        onClick={() => editRow(index)}
-                        className="text-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteRow(index)}
-                        className="text-red-600"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+                        alert("Deleted ✅");
+                        setViewData(null);
+                      }}
+                      className="bg-red-600 text-white px-3 py-1 rounded text-xs"
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+                </td>
+
+              </tr>
             </tbody>
+
           </table>
         </div>
+
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  /* ================= EDIT MODE ================= */
+  /* ================= LIST ================= */
+  if (!selectedProduct) {
+   return (
+  <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6">
 
-  return (
-    <div className="bg-gray-100 p-8 rounded-2xl">
-      <div className="flex justify-between mb-6">
-        <h2 className="text-2xl font-semibold">Packaging</h2>
+      {/* HEADER */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-6">
+        Packaging
+      </h2>
 
-        <div className="flex gap-3">
-          <button
-            onClick={addRow}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-          >
-            + Add Row
-          </button>
+      {/* TABLE */}
+      <div className="overflow-hidden rounded-lg border">
+        <table className="w-full text-sm text-left">
 
-          <button
-            onClick={handleSave}
-            className="bg-black text-white px-5 py-2 rounded-lg"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-auto bg-white rounded-xl border shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-purple-100">
+          {/* HEADER */}
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
-              {columns.map((col, i) => (
-                <th key={i} className="border px-4 py-2">
-                  {col.name}
-                </th>
-              ))}
-              <th className="border">Action</th>
+              <th className="px-4 py-3">Product ID</th>
+              <th className="px-4 py-3">Product Name</th>
+              <th className="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
 
+          {/* BODY */}
           <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {columns.map((col, colIndex) => (
-                  <td key={colIndex} className="border px-3 py-2">
-
-                    {col.name === "Product" ? (
-                      <select
-                        value={row[col.name] || ""}
-                        onChange={(e) =>
-                          handleChange(rowIndex, col.name, e.target.value)
-                        }
-                        className="w-full border px-2 py-1"
-                      >
-                        <option value="">Select Product</option>
-                        {testData.map((t, i) => (
-                          <option key={i}>{t.Product}</option>
-                        ))}
-                      </select>
-
-                    ) : col.type === "dropdown" ? (
-                      <select
-                        value={row[col.name] || ""}
-                        onChange={(e) =>
-                          handleChange(rowIndex, col.name, e.target.value)
-                        }
-                        className="w-full border px-2 py-1"
-                      >
-                        {col.options?.map((opt, i) => (
-                          <option key={i}>{opt}</option>
-                        ))}
-                      </select>
-
-                    ) : (
-                      <input
-                        type={col.type}
-                        value={row[col.name] || ""}
-                        onChange={(e) =>
-                          handleChange(rowIndex, col.name, e.target.value)
-                        }
-                        className="w-full border px-2 py-1"
-                      />
-                    )}
-
-                  </td>
-                ))}
-
-                <td className="border text-center">
-                  <button
-                    onClick={() =>
-                      setRows(rows.filter((_, i) => i !== rowIndex))
-                    }
-                    className="text-red-600"
-                  >
-                    ❌
-                  </button>
+            {packData.length === 0 ? (
+              <tr>
+                <td colSpan="3" className="text-center py-6 text-gray-400">
+                  No Products Available
                 </td>
               </tr>
-            ))}
+            ) : (
+              packData.map((p, i) => (
+                <tr
+                  key={i}
+                  className="border-t hover:bg-gray-50 transition"
+                >
+                  {/* PRODUCT ID */}
+                  <td className="px-6 py-4 font-medium text-gray-700">
+                    {p.batch}
+                  </td>
+
+                  {/* PRODUCT NAME */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {p.product}
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-3">
+
+                      <button
+                        onClick={() => handlePack(p)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Packing
+                      </button>
+
+                      <button
+                        onClick={() => handleView(p)}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => handleMove(p)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Move
+                      </button>
+
+                    </div>
+                  </td>
+
+                </tr>
+              ))
+            )}
           </tbody>
+
         </table>
+      </div>
+
+    </div>
+  </div>
+);
+  }
+
+  /* ================= FORM ================= */
+  return (
+    <div className="p-8 bg-gray-100">
+
+      <div className="bg-white p-6 rounded shadow grid grid-cols-2 gap-4">
+
+        <input value={formData.packId} disabled className="border p-2" />
+        <input value={formData.product} disabled className="border p-2" />
+        <input value={formData.batch} disabled className="border p-2" />
+
+        <input
+          placeholder="Packing Type"
+          onChange={(e) => handleChange("packingType", e.target.value)}
+          className="border p-2"
+        />
+
+        <input
+          placeholder="Material Used"
+          onChange={(e) => handleChange("material", e.target.value)}
+          className="border p-2"
+        />
+
+        <input
+          placeholder="Packed By"
+          onChange={(e) => handleChange("packedBy", e.target.value)}
+          className="border p-2"
+        />
+
+        <input
+          type="date"
+          value={formData.date}
+          onChange={(e) => handleChange("date", e.target.value)}
+          className="border p-2"
+        />
+
+        <input
+          placeholder="Quantity"
+          onChange={(e) => handleChange("qty", e.target.value)}
+          className="border p-2"
+        />
+
+        <div className="col-span-2 flex gap-3">
+          <button
+            onClick={handleSave}
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Save
+          </button>
+
+          <button
+            onClick={() => setSelectedProduct(null)}
+            className="bg-gray-600 text-white px-4 py-2 rounded"
+          >
+            Back
+          </button>
+        </div>
+
       </div>
     </div>
   );

@@ -1,294 +1,388 @@
 import { useState, useEffect } from "react";
 
 export default function Rework() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [savedData, setSavedData] = useState([]);
-  const [rows, setRows] = useState([]);
+  const [reworkData, setReworkData] = useState([]);
+  const [viewData, setViewData] = useState(null);
 
-  const [columns] = useState([
-    { name: "Rework ID", type: "text" },
-    { name: "Product", type: "text" },
-    { name: "Batch", type: "text" },
-    { name: "Defect", type: "text" },
-    { name: "Stage", type: "text" },
-    {
-      name: "Status",
-      type: "dropdown",
-      options: ["Pending", "In Progress", "Completed"],
-    },
-    { name: "Reworked By", type: "text" },
-    { name: "Date", type: "date" },
-    { name: "Remarks", type: "text" },
-  ]);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  /* ================= LOAD ================= */
+  const [formData, setFormData] = useState({
+    reworkType: "",
+    description: "",
+    doneBy: "",
+    date: "",
+  });
 
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
-    const data = localStorage.getItem("reworkData");
-    if (data) setSavedData(JSON.parse(data));
+    const rw = JSON.parse(localStorage.getItem("rework")) || [];
+    setReworkData(rw);
   }, []);
 
-  /* ================= ADD ROW ================= */
+  /* ================= VIEW ================= */
+  const handleView = (item) => {
+    setViewData(item);
+  };
 
-  const addRow = () => {
-    const newRow = {};
-    columns.forEach((col) => {
-      if (col.name === "Rework ID") {
-        newRow[col.name] = `RW${Date.now()}${Math.floor(Math.random() * 1000)}`;
-      } else {
-        newRow[col.name] = "";
+  /* ================= OPEN FORM ================= */
+  const handleOpenForm = (item) => {
+    setSelectedItem(item);
+    setShowForm(true);
+  };
+
+  /* ================= SAVE REWORK ================= */
+  const handleSaveRework = () => {
+    const updated = reworkData.map((r) => {
+      if (r.reworkId === selectedItem.reworkId) {
+        return {
+          ...r,
+          ...formData,
+          reworkStatus: "Completed",
+        };
       }
+      return r;
     });
 
-    newRow.processed = false; // 🔥 important flag
+    setReworkData(updated);
+    localStorage.setItem("rework", JSON.stringify(updated));
 
-    setRows([...rows, newRow]);
-  };
-
-  /* ================= HANDLE CHANGE ================= */
-
-  const handleChange = (rowIndex, columnName, value) => {
-    const updated = [...rows];
-    updated[rowIndex][columnName] = value;
-    setRows(updated);
-  };
-
-  /* ================= SAVE ================= */
-
-  const handleSave = () => {
-    const updatedData = [...savedData, ...rows];
-
-    /* 🔥 SEND ONLY NEW COMPLETED ITEMS TO QC */
-    const completedItems = rows.filter(
-      (row) => row.Status === "Completed" && !row.processed
-    );
-
-    if (completedItems.length > 0) {
-      const existingQC =
-        JSON.parse(localStorage.getItem("qualityInspection")) || [];
-
-const reworkedToQC = completedItems.map((item, index) => ({
-  "QC ID": `QC${Date.now()}${index}`,
-  Product: item.Product,
-  Batch: item.Batch,
-  Inspector: "Recheck Required",   // ✅ default value
-  Date: new Date().toISOString().split("T")[0], // ✅ auto date
-  Status: "Pending",  // ✅ IMPORTANT (not empty)
-  Remarks: `Reworked from ${item.Stage}: ${item.Defect}`,
-}));
-
-      localStorage.setItem(
-        "qualityInspection",
-        JSON.stringify([...existingQC, ...reworkedToQC])
-      );
-    }
-
-    /* 🔥 MARK AS PROCESSED */
-    const finalData = updatedData.map((item) => {
-      if (item.Status === "Completed") {
-        return { ...item, processed: true };
-      }
-      return item;
+    setShowForm(false);
+    setFormData({
+      reworkType: "",
+      description: "",
+      doneBy: "",
+      date: "",
     });
 
-    setSavedData(finalData);
-    localStorage.setItem("reworkData", JSON.stringify(finalData));
-
-    alert("Rework Updated & Sent Back to QC 🔄");
-
-    setRows([]);
-    setIsEditing(false);
+    alert("Rework Saved Successfully ✅");
   };
 
-  /* ================= DELETE / EDIT ================= */
+  // 🔥 ADD THIS FUNCTION
+const updateProductStage = (productId, newStage) => {
+  const products =
+    JSON.parse(localStorage.getItem("preAssembling")) || [];
 
-  const deleteRow = (index) => {
-    const updated = savedData.filter((_, i) => i !== index);
-    setSavedData(updated);
-    localStorage.setItem("reworkData", JSON.stringify(updated));
+  const updated = products.map((p) =>
+    p["WIP ID"] === productId
+      ? {
+          ...p,
+          "Process Stage": newStage,
+          "Current Status": "Pending",
+        }
+      : p
+  );
+
+  localStorage.setItem("preAssembling", JSON.stringify(updated));
+};
+
+  /* ================= MOVE TO QC ================= */
+  const handleMove = (item) => {
+  const qc =
+    JSON.parse(localStorage.getItem("qualityInspection")) || [];
+
+  const newQC = {
+    qcId: `QC${Date.now()}`,
+    product: item.product,
+    batch: item.batch,
+    productId: item.productId, // ✅ IMPORTANT
+    status: "Pending",
+    source: "Rework",
   };
 
-  const editRow = (index) => {
-    setRows([savedData[index]]);
-    setIsEditing(true);
+  localStorage.setItem(
+    "qualityInspection",
+    JSON.stringify([...qc, newQC])
+  );
 
-    const updated = savedData.filter((_, i) => i !== index);
-    setSavedData(updated);
-    localStorage.setItem("reworkData", JSON.stringify(updated));
-  };
+  // 🔥 UPDATE PRODUCT MASTER
+  updateProductStage(item.productId, "Quality Inspection");
 
-  /* ================= VIEW MODE ================= */
+  // remove from rework
+  const updated = reworkData.filter(
+    (r) => r.reworkId !== item.reworkId
+  );
 
-  if (!isEditing) {
+  setReworkData(updated);
+  localStorage.setItem("rework", JSON.stringify(updated));
+
+  alert("Moved to Quality Inspection 🚀");
+  setViewData(null);
+};
+
+
+
+  /* ================= REWORK FORM ================= */
+  if (showForm && selectedItem) {
     return (
-      <div className="bg-gray-100 p-8 rounded-2xl">
-        <div className="flex justify-between mb-6">
-          <h2 className="text-2xl font-semibold">
-            Rework Management
+      <div className="p-8 bg-gray-100">
+        <div className="bg-white p-6 rounded shadow max-w-3xl mx-auto">
+
+          <h2 className="text-xl font-semibold mb-4">
+            Rework Form - {selectedItem.product}
           </h2>
 
-          <button
-            onClick={() => setIsEditing(true)}
-            className="bg-purple-600 text-white px-5 py-2 rounded-lg"
-          >
-            + Manage Rework
-          </button>
-        </div>
+          <div className="space-y-3">
 
-        <div className="overflow-auto bg-white rounded-xl border shadow-sm">
-          <table className="min-w-full text-sm">
-            <thead className="bg-purple-100">
-              <tr>
-                {columns.map((col, i) => (
-                  <th key={i} className="border px-4 py-2">
-                    {col.name}
-                  </th>
-                ))}
-                <th className="border px-4 py-2">Action</th>
-              </tr>
-            </thead>
+            <input
+              type="text"
+              placeholder="Rework Type (Repair / Replace)"
+              value={formData.reworkType}
+              className="w-full border p-2"
+              onChange={(e) =>
+                setFormData({ ...formData, reworkType: e.target.value })
+              }
+            />
 
-            <tbody>
-              {savedData.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + 1} className="text-center p-4">
-                    No Rework Data
-                  </td>
-                </tr>
-              ) : (
-                savedData.map((row, index) => (
-                  <tr key={index}>
-                    {columns.map((col, i) => (
-                      <td key={i} className="border px-3 py-2">
-                        {col.name === "Status" ? (
-                          <span
-                            className={`px-2 py-1 rounded text-white ${
-                           row[col.name] === "Completed"
-  ? "bg-green-500"
-  : row[col.name] === "In Progress"
-  ? "bg-blue-500"
-  : row[col.name] === "Pending"
-  ? "bg-yellow-500"
-  : "bg-gray-500"
-                            }`}
-                          >
-                            {row[col.name]}
-                          </span>
-                        ) : (
-                          row[col.name]
-                        )}
-                      </td>
-                    ))}
+            <textarea
+              placeholder="Rework Description"
+              value={formData.description}
+              className="w-full border p-2"
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
 
-                    <td className="border text-center space-x-2">
-                      <button
-                        onClick={() => editRow(index)}
-                        className="text-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteRow(index)}
-                        className="text-red-600"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+            <input
+              type="text"
+              placeholder="Done By"
+              value={formData.doneBy}
+              className="w-full border p-2"
+              onChange={(e) =>
+                setFormData({ ...formData, doneBy: e.target.value })
+              }
+            />
+
+            <input
+              type="date"
+              value={formData.date}
+              className="w-full border p-2"
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="mt-4 flex gap-3">
+            <button
+              onClick={handleSaveRework}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Save
+            </button>
+
+            <button
+              onClick={() => setShowForm(false)}
+              className="bg-gray-600 text-white px-4 py-2 rounded"
+            >
+              Cancel
+            </button>
+          </div>
+
         </div>
       </div>
     );
   }
 
-  /* ================= EDIT MODE ================= */
+  /* ================= VIEW PAGE ================= */
+  if (viewData) {
+    return (
+      <div className="p-8 bg-gray-100">
+        <div className="bg-white p-6 rounded shadow max-w-4xl mx-auto">
 
-  return (
-    <div className="bg-gray-100 p-8 rounded-2xl">
-      <div className="flex justify-between mb-6">
-        <h2 className="text-2xl font-semibold">
-          Rework Management
-        </h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Rework Details - {viewData.product}
+          </h2>
 
-        <div className="flex gap-3">
-          <button
-            onClick={addRow}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-          >
-            + Add Row
-          </button>
+          <table className="w-full border">
+            <tbody>
+              <tr>
+                <td className="border p-2 font-medium">Rework ID</td>
+                <td className="border p-2">{viewData.reworkId}</td>
+              </tr>
 
-          <button
-            onClick={handleSave}
-            className="bg-black text-white px-5 py-2 rounded-lg"
-          >
-            Save
-          </button>
+              <tr>
+                <td className="border p-2 font-medium">Product</td>
+                <td className="border p-2">{viewData.product}</td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Batch</td>
+                <td className="border p-2">{viewData.batch}</td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Source</td>
+                <td className="border p-2">
+                  {viewData.reason?.includes("Functional")
+                    ? "Functional Testing"
+                    : "Quality Inspection"}
+                </td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Reason</td>
+                <td className="border p-2">{viewData.reason}</td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Rework Type</td>
+                <td className="border p-2">{viewData.reworkType}</td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Description</td>
+                <td className="border p-2">{viewData.description}</td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Done By</td>
+                <td className="border p-2">{viewData.doneBy}</td>
+              </tr>
+
+              <tr>
+                <td className="border p-2 font-medium">Date</td>
+                <td className="border p-2">{viewData.date}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="mt-4 flex gap-3">
+           
+
+            <button
+              onClick={() => setViewData(null)}
+              className="bg-gray-600 text-white px-4 py-2 rounded"
+            >
+              Back
+            </button>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      <div className="overflow-auto bg-white rounded-xl border shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-purple-100">
+  /* ================= LIST ================= */
+  return (
+  <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6">
+
+      {/* HEADER */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-6">
+        Rework Management
+      </h2>
+
+      {/* TABLE */}
+      <div className="overflow-hidden rounded-lg border">
+        <table className="w-full text-sm text-left">
+
+          {/* HEADER */}
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
-              {columns.map((col, i) => (
-                <th key={i} className="border px-4 py-2">
-                  {col.name}
-                </th>
-              ))}
-              <th className="border">Action</th>
+              <th className="px-4 py-3">Rework ID</th>
+              <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">Batch</th>
+              <th className="px-4 py-3">Source</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
 
+          {/* BODY */}
           <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {columns.map((col, colIndex) => (
-                  <td key={colIndex} className="border px-3 py-2">
-                    {col.type === "dropdown" ? (
-                      <select
-                        value={row[col.name] || ""}
-                        onChange={(e) =>
-                          handleChange(rowIndex, col.name, e.target.value)
-                        }
-                        className="w-full border px-2 py-1"
-                      >
-                        <option value="">Select</option>
-                        {col.options?.map((opt, i) => (
-                          <option key={i}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={col.type}
-                        value={row[col.name] || ""}
-                        onChange={(e) =>
-                          handleChange(rowIndex, col.name, e.target.value)
-                        }
-                        className="w-full border px-2 py-1"
-                      />
-                    )}
-                  </td>
-                ))}
-
-                <td className="border text-center">
-                  <button
-                    onClick={() =>
-                      setRows(rows.filter((_, i) => i !== rowIndex))
-                    }
-                    className="text-red-600"
-                  >
-                    ❌
-                  </button>
+            {reworkData.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center py-6 text-gray-400">
+                  No Rework Data Available
                 </td>
               </tr>
-            ))}
+            ) : (
+              reworkData.map((r, i) => (
+                <tr
+                  key={i}
+                  className="border-t hover:bg-gray-50 transition"
+                >
+                  {/* REWORK ID */}
+                  <td className="px-6 py-4 font-medium text-gray-700">
+                    {r.reworkId}
+                  </td>
+
+                  {/* PRODUCT */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {r.product}
+                  </td>
+
+                  {/* BATCH */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {r.batch}
+                  </td>
+
+                  {/* SOURCE */}
+                  <td
+                    className={`px-6 py-4 font-medium ${
+                      r.source === "Functional Testing"
+                        ? "text-blue-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {r.source || "Quality Inspection"}
+                  </td>
+
+                  {/* STATUS */}
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        r.reworkStatus === "Completed"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {r.reworkStatus || "Pending"}
+                    </span>
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-3">
+
+                      <button
+                        onClick={() => handleOpenForm(r)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Rework
+                      </button>
+
+                      <button
+                        onClick={() => handleView(r)}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => handleMove(r)}
+                        disabled={r.reworkStatus !== "Completed"}
+                        className={`px-4 py-2 rounded-md text-sm font-medium text-white shadow ${
+                          r.reworkStatus === "Completed"
+                            ? "bg-green-600 hover:bg-green-700"
+                            : "bg-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        Move
+                      </button>
+
+                    </div>
+                  </td>
+
+                </tr>
+              ))
+            )}
           </tbody>
+
         </table>
       </div>
+
     </div>
-  );
+  </div>
+);
 }

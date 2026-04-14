@@ -1,344 +1,246 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
-export default function Reports() {
-  const defaultColumns = [
-    { name: "Report Type", type: "text" },
-    { name: "Date Range", type: "text" },
-    { name: "Opening Stock", type: "number" },
-    { name: "Closing Stock", type: "number" },
-    { name: "Total Consumption", type: "number" },
-    { name: "Low Stock Items", type: "text" },
-  ];
+export default function ProductReport() {
+  const [search, setSearch] = useState("");
+  const [report, setReport] = useState(null);
 
-  const createEmptyRow = (cols) => {
-    const row = {};
-    cols.forEach((col) => {
-      row[col.name] = "";
-    });
-    return row;
-  };
+  const generateReport = () => {
+    const products = JSON.parse(localStorage.getItem("products")) || [];
+    const pre = JSON.parse(localStorage.getItem("preAssembling")) || [];
+    const phosphating = JSON.parse(localStorage.getItem("phosphating")) || [];
+    const powdering = JSON.parse(localStorage.getItem("powdering")) || [];
+    const qc = JSON.parse(localStorage.getItem("qualityInspection")) || [];
+    const ft = JSON.parse(localStorage.getItem("functionalTesting")) || [];
+    const rework = JSON.parse(localStorage.getItem("rework")) || [];
+    const packaging = JSON.parse(localStorage.getItem("packagingData")) || [];
+    const dispatch = JSON.parse(localStorage.getItem("dispatchData")) || [];
+    const fg = JSON.parse(localStorage.getItem("finishedGoods")) || [];
 
-  const [columns, setColumns] = useState(defaultColumns);
-  const [rows, setRows] = useState([createEmptyRow(defaultColumns)]);
-  const [savedData, setSavedData] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
-
-  // ✅ Load from LocalStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("reportsData");
-    if (stored) {
-      setSavedData(JSON.parse(stored));
-    }
-  }, []);
-
-  // ✅ Save to LocalStorage
-  useEffect(() => {
-    localStorage.setItem("reportsData", JSON.stringify(savedData));
-  }, [savedData]);
-
-  // ================= FORM FUNCTIONS =================
-
-  const addColumn = () => {
-    const newColumn = {
-      name: `New Column ${columns.length + 1}`,
-      type: "text",
-    };
-
-    setColumns([...columns, newColumn]);
-
-    const updatedRows = rows.map((row) => ({
-      ...row,
-      [newColumn.name]: "",
-    }));
-
-    setRows(updatedRows);
-  };
-
-  const deleteColumn = (index) => {
-    const columnToDelete = columns[index].name;
-
-    const updatedColumns = columns.filter((_, i) => i !== index);
-    setColumns(updatedColumns);
-
-    const updatedRows = rows.map((row) => {
-      const updatedRow = { ...row };
-      delete updatedRow[columnToDelete];
-      return updatedRow;
-    });
-
-    setRows(updatedRows);
-  };
-
-  const addRow = () => {
-    setRows([...rows, createEmptyRow(columns)]);
-  };
-
-  const deleteRow = (rowIndex) => {
-    const updatedRows = rows.filter((_, i) => i !== rowIndex);
-    setRows(updatedRows);
-  };
-
-  const changeColumnName = (index, newName) => {
-    const oldName = columns[index].name;
-
-    const updatedColumns = [...columns];
-    updatedColumns[index].name = newName;
-    setColumns(updatedColumns);
-
-    const updatedRows = rows.map((row) => {
-      const updatedRow = { ...row };
-      updatedRow[newName] = updatedRow[oldName];
-      delete updatedRow[oldName];
-      return updatedRow;
-    });
-
-    setRows(updatedRows);
-  };
-
-  const changeColumnType = (index, newType) => {
-    const updated = [...columns];
-    updated[index].type = newType;
-    setColumns(updated);
-  };
-
-  const handleChange = (rowIndex, columnName, value) => {
-    const updatedRows = [...rows];
-    updatedRows[rowIndex][columnName] = value;
-    setRows(updatedRows);
-  };
-
-  // ================= SAVE =================
-
-  const handleSave = () => {
-    const filteredRows = rows.filter((row) =>
-      Object.values(row).some((val) => val !== "")
+    // 🔍 find product
+    const product = products.find(
+      (p) =>
+        p.productId === search ||
+        p.productName.toLowerCase() === search.toLowerCase()
     );
 
-    if (filteredRows.length === 0) {
-      alert("No Data to Save ❌");
+    if (!product) {
+      alert("Product not found ❌");
       return;
     }
 
-    if (editIndex !== null) {
-      const updated = [...savedData];
-      updated[editIndex] = filteredRows[0];
-      setSavedData(updated);
-      setEditIndex(null);
-    } else {
-      setSavedData([...savedData, ...filteredRows]);
-    }
+    // 🔥 collect all stage data
+    const reportData = {
+      product,
 
-    alert("Report Saved Successfully ✅");
+      preAssembling: pre.find(
+        (p) => p["Product ID"] === product.productId
+      ),
 
-    setRows([createEmptyRow(columns)]);
-    setShowForm(false);
+      phosphating: phosphating.find(
+        (p) => p.productId === product.productId
+      ),
+
+      powdering: powdering.find(
+        (p) => p.productId === product.productId
+      ),
+
+      quality: qc.find(
+        (p) => p.productId === product.productId
+      ),
+
+      functional: ft.find(
+        (p) => p.productId === product.productId
+      ),
+
+      rework: rework.find(
+        (p) => p.product === product.productName
+      ),
+
+      packaging: packaging.find(
+        (p) => p.productId === product.productId
+      ),
+
+      dispatch: dispatch.find(
+        (p) => p.product === product.productName
+      ),
+
+      finished: fg.find(
+        (p) => p.product === product.productName
+      ),
+    };
+
+    setReport(reportData);
   };
-
-  const handleCancel = () => {
-    setRows([createEmptyRow(columns)]);
-    setShowForm(false);
-    setEditIndex(null);
-  };
-
-  const handleEdit = (index) => {
-    setRows([savedData[index]]);
-    setEditIndex(index);
-    setShowForm(true);
-  };
-
-  const handleDelete = (index) => {
-    const updated = savedData.filter((_, i) => i !== index);
-    setSavedData(updated);
-  };
-
-  // ================= UI =================
 
   return (
-    <div className="bg-gray-100 p-8 rounded-2xl">
+    <div className="p-8 bg-gray-100 min-h-screen">
 
-      {/* ===== Saved Reports Table ===== */}
-      {!showForm && (
-        <div className="bg-white p-6 rounded-xl shadow">
+      {/* SEARCH */}
+      <div className="bg-white p-6 rounded shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4">
+          Product Report
+        </h2>
 
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">
-              Saved Reports
-            </h2>
+        <div className="flex gap-3">
+          <input
+            placeholder="Enter Product ID or Name"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border p-2 flex-1"
+          />
 
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-            >
-              + Generate Report
-            </button>
-          </div>
-
-          {savedData.length === 0 ? (
-            <p className="text-gray-500">No Reports Available</p>
-          ) : (
-            <div className="overflow-auto">
-              <table className="min-w-full text-sm border">
-                <thead className="bg-gray-100">
-                  <tr>
-                    {columns.map((col, index) => (
-                      <th key={index} className="border px-4 py-2">
-                        {col.name}
-                      </th>
-                    ))}
-                    <th className="border px-4 py-2">Action</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {savedData.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {columns.map((col, colIndex) => (
-                        <td key={colIndex} className="border px-4 py-2">
-                          {row[col.name]}
-                        </td>
-                      ))}
-                      <td className="border px-4 py-2 text-center space-x-3">
-                        <button
-                          onClick={() => handleEdit(rowIndex)}
-                          className="text-blue-600 font-semibold"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(rowIndex)}
-                          className="text-red-600 font-semibold"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-
-              </table>
-            </div>
-          )}
+          <button
+            onClick={generateReport}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Generate Report
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* ===== Report Entry Form ===== */}
-      {showForm && (
-        <div>
+      {/* REPORT */}
+      {report && (
+        <div className="bg-white p-6 rounded shadow">
 
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold">
-              Generate Report
-            </h2>
+          <h3 className="text-lg font-semibold mb-4">
+            Product: {report.product.productName}
+          </h3>
 
-            <div className="flex gap-3">
-              <button
-                onClick={addColumn}
-                className="bg-green-600 text-white px-5 py-2 rounded-lg"
-              >
-                + Add Column
-              </button>
+          <table className="w-full border text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-2">Stage</th>
+                <th className="border p-2">Details</th>
+                <th className="border p-2">Status</th>
+              </tr>
+            </thead>
 
-              <button
-                onClick={addRow}
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-              >
-                + Add Row
-              </button>
+            <tbody>
 
-              <button
-                onClick={handleSave}
-                className="bg-black text-white px-5 py-2 rounded-lg"
-              >
-                Save
-              </button>
+              {/* PRE-ASSEMBLING */}
+              <tr>
+                <td className="border p-2">Pre-Assembling</td>
+                <td className="border p-2">
+                  {report.preAssembling
+                    ? `WIP ID: ${report.preAssembling["WIP ID"]}`
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.preAssembling
+                    ? report.preAssembling["Current Status"]
+                    : "-"}
+                </td>
+              </tr>
 
-              <button
-                onClick={handleCancel}
-                className="bg-red-500 text-white px-5 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+              {/* PHOSPHATING */}
+              <tr>
+                <td className="border p-2">Phosphating</td>
+                <td className="border p-2">
+                  {report.phosphating
+                    ? report.phosphating.material || "-"
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.phosphating?.status || "-"}
+                </td>
+              </tr>
 
-          <div className="overflow-auto bg-white rounded-xl border shadow-sm">
-            <table className="min-w-full text-sm">
+              {/* POWDERING */}
+              <tr>
+                <td className="border p-2">Powdering</td>
+                <td className="border p-2">
+                  {report.powdering
+                    ? report.powdering.color || "-"
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.powdering?.status || "-"}
+                </td>
+              </tr>
 
-              <thead className="bg-gray-50">
-                <tr>
-                  {columns.map((col, index) => (
-                    <th key={index} className="border px-4 py-3 align-top">
+              {/* QUALITY */}
+              <tr>
+                <td className="border p-2">Quality Inspection</td>
+                <td className="border p-2">
+                  {report.quality
+                    ? report.quality.inspectionBy || "-"
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.quality?.status || "-"}
+                </td>
+              </tr>
 
-                      <div className="flex justify-between items-center mb-2">
-                        <input
-                          type="text"
-                          value={col.name}
-                          onChange={(e) =>
-                            changeColumnName(index, e.target.value)
-                          }
-                          className="w-full border rounded px-2 py-1 font-medium"
-                        />
-                        <button
-                          onClick={() => deleteColumn(index)}
-                          className="ml-2 text-red-600 font-bold"
-                        >
-                          ❌
-                        </button>
-                      </div>
+              {/* FUNCTIONAL */}
+              <tr>
+                <td className="border p-2">Functional Testing</td>
+                <td className="border p-2">
+                  {report.functional
+                    ? report.functional.result
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.functional?.result || "-"}
+                </td>
+              </tr>
 
-                      <select
-                        value={col.type}
-                        onChange={(e) =>
-                          changeColumnType(index, e.target.value)
-                        }
-                        className="w-full border rounded px-2 py-1"
-                      >
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="date">Date</option>
-                      </select>
+              {/* REWORK */}
+              <tr>
+                <td className="border p-2">Rework</td>
+                <td className="border p-2">
+                  {report.rework
+                    ? report.rework.reason
+                    : "No Rework"}
+                </td>
+                <td className="border p-2">
+                  {report.rework?.status || "-"}
+                </td>
+              </tr>
 
-                    </th>
-                  ))}
+              {/* PACKAGING */}
+              <tr>
+                <td className="border p-2">Packaging</td>
+                <td className="border p-2">
+                  {report.packaging
+                    ? report.packaging.packingType
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.packaging?.status || "-"}
+                </td>
+              </tr>
 
-                  <th className="border px-3 py-3">Action</th>
-                </tr>
-              </thead>
+              {/* DISPATCH */}
+              <tr>
+                <td className="border p-2">Dispatch</td>
+                <td className="border p-2">
+                  {report.dispatch
+                    ? report.dispatch.dispatchId
+                    : "Not Done"}
+                </td>
+                <td className="border p-2">
+                  {report.dispatch?.status || "-"}
+                </td>
+              </tr>
 
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {columns.map((col, colIndex) => (
-                      <td key={colIndex} className="border px-3 py-2">
-                        <input
-                          type={col.type}
-                          value={row[col.name] || ""}
-                          onChange={(e) =>
-                            handleChange(rowIndex, col.name, e.target.value)
-                          }
-                          className="w-full border rounded px-2 py-1"
-                        />
-                      </td>
-                    ))}
-                    <td className="border px-3 py-2 text-center">
-                      <button
-                        onClick={() => deleteRow(rowIndex)}
-                        className="text-red-600 font-bold"
-                      >
-                        ❌
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+              {/* FINISHED GOODS */}
+              <tr>
+                <td className="border p-2">Finished Goods</td>
+                <td className="border p-2">
+                  {report.finished
+                    ? `Qty: ${report.finished.qty}`
+                    : "Not Available"}
+                </td>
+                <td className="border p-2">
+                  {report.finished?.status || "-"}
+                </td>
+              </tr>
 
-            </table>
-          </div>
+            </tbody>
+          </table>
 
         </div>
       )}
-
     </div>
   );
 }

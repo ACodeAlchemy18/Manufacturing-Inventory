@@ -960,62 +960,93 @@ const index = savedData.findIndex(
 
   /* ================= TABLE VIEW ================= */
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-xl p-6">
-        <h2 className="text-2xl font-semibold text-gray-700 mb-6">
-          Phosphating Products
-        </h2>
+  <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6">
 
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100">
+      {/* HEADER */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-6">
+        Phosphating Products
+      </h2>
+
+      {/* TABLE */}
+      <div className="overflow-hidden rounded-lg border">
+        <table className="w-full text-sm text-left">
+
+          {/* HEADER */}
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
-              <th className="px-4 py-2">Product ID</th>
-              <th className="px-4 py-2">Product Name</th>
-              <th className="px-4 py-2 text-center">Actions</th>
+              <th className="px-6 py-3">Product ID</th>
+              <th className="px-6 py-3">Product Name</th>
+              <th className="px-6 py-3 text-center">Actions</th>
             </tr>
           </thead>
 
+          {/* BODY */}
           <tbody>
-            {products.map((p, i) => (
-              <tr key={i} className="border-t">
-                <td className="px-4 py-2">
-                  {p["Product ID"] || i + 1}
-                </td>
-                <td className="px-4 py-2">
-                  {p["Product Name"]}
-                </td>
-                <td className="text-center space-x-2">
-                  <button
-                    onClick={() => openForm(p)}
-                    className="bg-indigo-600 text-white px-3 py-1 rounded"
-                  >
-                    Add Material
-                  </button>
-
-                  <button
-                    onClick={() => handleView(p)}
-                    className="bg-green-600 text-white px-3 py-1 rounded"
-                  >
-                    View
-                  </button>
-
-               <button
-  onClick={() => moveToPowdering(p)}
-  className={`px-3 py-1 rounded text-white ${
-    p.phosphating?.qc?.qcStatus?.toLowerCase() === "approved"
-      ? "bg-blue-600"
-      : "bg-gray-400 cursor-not-allowed"
-  }`}
-  disabled={p.phosphating?.qc?.qcStatus?.toLowerCase() !== "approved"}
->
-  Move Powdering
-</button>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan="3" className="text-center py-6 text-gray-400">
+                  No Products Available
                 </td>
               </tr>
-            ))}
+            ) : (
+              products.map((p, i) => (
+                <tr
+                  key={i}
+                  className="border-t hover:bg-gray-50 transition"
+                >
+                  {/* PRODUCT ID */}
+                  <td className="px-6 py-4 font-medium text-gray-700">
+                    {p["Product ID"] || i + 1}
+                  </td>
+
+                  {/* PRODUCT NAME */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {p["Product Name"]}
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-3">
+
+                      <button
+                        onClick={() => openForm(p)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Add Material
+                      </button>
+
+                      <button
+                        onClick={() => handleView(p)}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => moveToPowdering(p)}
+                        disabled={
+                          p.phosphating?.qc?.qcStatus?.toLowerCase() !== "approved"
+                        }
+                        className={`px-4 py-2 rounded-md text-sm font-medium text-white shadow ${
+                          p.phosphating?.qc?.qcStatus?.toLowerCase() === "approved"
+                            ? "bg-blue-600 hover:bg-blue-700"
+                            : "bg-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        Move to Powdering
+                      </button>
+
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
+
         </table>
       </div>
     </div>
-  );
+  </div>
+);
 }

@@ -1,208 +1,360 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function FinishedGoods() {
-  const [fgData, setFgData] = useState([]);
+  const [fgList, setFgList] = useState([]);
+  const [savedData, setSavedData] = useState([]);
 
-  /* ================= LOAD DATA ================= */
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [viewData, setViewData] = useState(null);
 
+  const [formData, setFormData] = useState({
+    fgId: "",
+    product: "",
+    batch: "",
+    qty: "",
+    packedBy: "",
+    date: "",
+    remarks: "",
+    status: "Finished",
+  });
+
+  /* ================= LOAD ================= */
   useEffect(() => {
-    loadFinishedGoods();
+    const fg = JSON.parse(localStorage.getItem("finishedGoodsQueue")) || [];
+    const saved = JSON.parse(localStorage.getItem("finishedGoods")) || [];
+
+    setFgList(fg);
+    setSavedData(saved);
   }, []);
 
-  const loadFinishedGoods = () => {
-    const packaging =
-      JSON.parse(localStorage.getItem("packagingData")) || [];
+  /* ================= OPEN FORM ================= */
+  const handleFinish = (item) => {
+    setSelectedItem(item);
 
-    const savedFG =
-      JSON.parse(localStorage.getItem("finishedGoods")) || [];
-
-    const fgList = packaging.map((p, index) => {
-      const existing = savedFG.find(
-        (f) => f.packageId === p["Package ID"]
-      );
-
-      return (
-        existing || {
-          fgId: "FG-" + (index + 1),
-          packageId: p["Package ID"],
-          productName: p["Product"],
-          batch: p["Batch"],
-          quantity: 1,
-          availableStock: 1,
-          dispatchedQty: 0,
-          status: "Ready",
-          date: new Date().toLocaleDateString(),
-        }
-      );
+    setFormData({
+      fgId: `FG${Date.now()}`,
+      product: item.product,
+      batch: item.batch,
+      qty: "",
+      packedBy: "",
+      date: new Date().toISOString().split("T")[0],
+      remarks: "",
+      status: "Finished",
     });
 
-    setFgData(fgList);
+    setIsFormOpen(true);
+    setViewData(null);
   };
 
-  /* ================= DISPATCH ================= */
+  /* ================= SAVE ================= */
+  const handleSave = () => {
+    const index = savedData.findIndex((i) => i.fgId === formData.fgId);
 
-  const dispatchItem = (item) => {
-    const qty = prompt("Enter Dispatch Quantity");
+    let updated;
+    if (index !== -1) {
+      updated = [...savedData];
+      updated[index] = formData;
+    } else {
+      updated = [...savedData, formData];
+    }
 
-    if (!qty) return;
+    setSavedData(updated);
+    localStorage.setItem("finishedGoods", JSON.stringify(updated));
 
-    const dispatchQty = Number(qty);
+    alert("Finished Goods Saved ✅");
+    setIsFormOpen(false);
+  };
 
-    if (dispatchQty <= 0)
-      return alert("Enter valid quantity");
+  /* ================= VIEW ================= */
+  const handleView = (item) => {
+    const data = savedData.find((i) => i.fgId === item.fgId);
+    setViewData(data);
+  };
 
-    if (dispatchQty > item.availableStock)
-      return alert("Not enough stock");
-
-    const updated = fgData.map((f) => {
-      if (f.fgId === item.fgId) {
-        const newAvailable = f.availableStock - dispatchQty;
-
-        return {
-          ...f,
-          availableStock: newAvailable,
-          dispatchedQty: f.dispatchedQty + dispatchQty,
-          status:
-            newAvailable === 0
-              ? "Dispatched"
-              : "Partial",
-        };
-      }
-      return f;
-    });
-
-    setFgData(updated);
-    localStorage.setItem(
-      "finishedGoods",
-      JSON.stringify(updated)
-    );
+  /* ================= EDIT ================= */
+  const handleEdit = (item) => {
+    setFormData(item);
+    setIsFormOpen(true);
+    setViewData(null);
   };
 
   /* ================= DELETE ================= */
+  const handleDelete = (id) => {
+    const updated = savedData.filter((i) => i.fgId !== id);
 
-  const deleteItem = (index) => {
-    const updated = fgData.filter((_, i) => i !== index);
-    setFgData(updated);
+    setSavedData(updated);
+    localStorage.setItem("finishedGoods", JSON.stringify(updated));
+
+    setViewData(null);
+    alert("Deleted ✅");
+  };
+
+  /* ================= MOVE TO DISPATCH ================= */
+  const handleMove = (item) => {
+    const dispatch =
+      JSON.parse(localStorage.getItem("dispatch")) || [];
+
+    const newDispatch = {
+      dispatchId: `D${Date.now()}`,
+      product: item.product,
+      batch: item.batch,
+      qty: item.qty,
+      status: "Ready",
+      date: new Date().toISOString().split("T")[0],
+    };
+
     localStorage.setItem(
-      "finishedGoods",
-      JSON.stringify(updated)
+      "dispatch",
+      JSON.stringify([...dispatch, newDispatch])
     );
+
+    const updated = savedData.filter((i) => i.fgId !== item.fgId);
+
+    setSavedData(updated);
+    localStorage.setItem("finishedGoods", JSON.stringify(updated));
+
+    setViewData(null);
+    alert("Moved to Dispatch 🚚");
   };
 
-  /* ================= STATUS COLOR ================= */
+  /* ================= VIEW PAGE ================= */
+  if (viewData) {
+    return (
+      <div className="p-8 bg-gray-100">
+        <div className="bg-white p-6 rounded shadow max-w-6xl mx-auto">
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Ready":
-        return "bg-yellow-100 text-yellow-700";
-      case "Partial":
-        return "bg-orange-100 text-orange-700";
-      case "Dispatched":
-        return "bg-green-100 text-green-700";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
+          <div className="flex justify-between mb-4 border-b pb-2">
+            <h2 className="text-xl font-semibold">
+              Finished Goods - {viewData.product}
+            </h2>
 
-  /* ================= UI ================= */
+            <button
+              onClick={() => setViewData(null)}
+              className="bg-gray-600 text-white px-4 py-2 rounded"
+            >
+              Back
+            </button>
+          </div>
 
-  return (
-    <div className="bg-gray-100 p-8 rounded-2xl">
-      
-      {/* HEADER */}
-      <div className="flex justify-between mb-6">
-        <h2 className="text-2xl font-semibold">
-          Finished Goods Inventory
-        </h2>
+          {/* HORIZONTAL TABLE */}
+          <div className="overflow-x-auto border rounded">
+            <table className="min-w-[900px] w-full text-sm">
 
-        <button
-          onClick={loadFinishedGoods}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg"
-        >
-          🔄 Refresh
-        </button>
-      </div>
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 border">FG ID</th>
+                  <th className="p-3 border">Product</th>
+                  <th className="p-3 border">Batch</th>
+                  <th className="p-3 border">Qty</th>
+                  <th className="p-3 border">Packed By</th>
+                  <th className="p-3 border">Date</th>
+                  <th className="p-3 border">Status</th>
+                  <th className="p-3 border">Remarks</th>
+                  <th className="p-3 border">Action</th>
+                </tr>
+              </thead>
 
-      {/* TABLE */}
-      <div className="overflow-auto bg-white rounded-xl border shadow-sm">
-        <table className="min-w-full text-sm">
-          
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-4 py-2">FG ID</th>
-              <th className="border px-4 py-2">Product</th>
-              <th className="border px-4 py-2">Batch</th>
-              <th className="border px-4 py-2">Total Qty</th>
-              <th className="border px-4 py-2">Available</th>
-              <th className="border px-4 py-2">Dispatched</th>
-              <th className="border px-4 py-2">Status</th>
-              <th className="border px-4 py-2">Actions</th>
-            </tr>
-          </thead>
+              <tbody>
+                <tr>
+                  <td className="border p-2">{viewData.fgId}</td>
+                  <td className="border p-2">{viewData.product}</td>
+                  <td className="border p-2">{viewData.batch}</td>
+                  <td className="border p-2">{viewData.qty}</td>
+                  <td className="border p-2">{viewData.packedBy}</td>
+                  <td className="border p-2">{viewData.date}</td>
+                  <td className="border p-2">{viewData.status}</td>
+                  <td className="border p-2">{viewData.remarks}</td>
 
-          <tbody>
-            {fgData.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="text-center p-4">
-                  No Finished Goods Available
-                </td>
-              </tr>
-            ) : (
-              fgData.map((fg, index) => (
-                <tr key={index}>
-                  
-                  <td className="border px-3 py-2">
-                    {fg.fgId}
-                  </td>
+                  <td className="border p-2 space-x-2 text-center">
 
-                  <td className="border px-3 py-2">
-                    {fg.productName}
-                  </td>
-
-                  <td className="border px-3 py-2">
-                    {fg.batch}
-                  </td>
-
-                  <td className="border px-3 py-2">
-                    {fg.quantity}
-                  </td>
-
-                  <td className="border px-3 py-2">
-                    {fg.availableStock}
-                  </td>
-
-                  <td className="border px-3 py-2">
-                    {fg.dispatchedQty}
-                  </td>
-
-                  {/* STATUS */}
-                  <td className="border px-3 py-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(
-                        fg.status
-                      )}`}
-                    >
-                      {fg.status}
-                    </span>
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td className="border px-3 py-2 flex gap-2 justify-center">
-                    
                     <button
-                      onClick={() => dispatchItem(fg)}
-                      className="bg-green-600 text-white px-3 py-1 rounded"
+                      onClick={() => handleEdit(viewData)}
+                      className="bg-yellow-500 text-white px-2 py-1 rounded"
                     >
-                      Dispatch
+                      Edit
                     </button>
 
                     <button
-                      onClick={() => deleteItem(index)}
-                      className="bg-red-600 text-white px-3 py-1 rounded"
+                      onClick={() => handleDelete(viewData.fgId)}
+                      className="bg-red-500 text-white px-2 py-1 rounded"
                     >
                       Delete
                     </button>
 
+                    <button
+                      onClick={() => handleMove(viewData)}
+                      className="bg-green-600 text-white px-2 py-1 rounded"
+                    >
+                      Move
+                    </button>
+
+                  </td>
+                </tr>
+              </tbody>
+
+            </table>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  /* ================= FORM ================= */
+  if (isFormOpen) {
+    return (
+      <div className="p-8 bg-gray-100">
+        <div className="bg-white p-6 rounded shadow max-w-3xl mx-auto">
+
+          <h2 className="text-xl font-semibold mb-4">
+            Finish Goods Form
+          </h2>
+
+          <div className="grid grid-cols-2 gap-4">
+
+            <input value={formData.fgId} disabled className="border p-2" />
+            <input value={formData.product} disabled className="border p-2" />
+            <input value={formData.batch} disabled className="border p-2" />
+
+            <input
+              placeholder="Quantity"
+              value={formData.qty}
+              onChange={(e) =>
+                setFormData({ ...formData, qty: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <input
+              placeholder="Packed By"
+              value={formData.packedBy}
+              onChange={(e) =>
+                setFormData({ ...formData, packedBy: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
+              className="border p-2"
+            />
+
+            <input
+              placeholder="Remarks"
+              value={formData.remarks}
+              onChange={(e) =>
+                setFormData({ ...formData, remarks: e.target.value })
+              }
+              className="border p-2"
+            />
+
+          </div>
+
+          <div className="mt-4 flex gap-3">
+            <button
+              onClick={handleSave}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              Save
+            </button>
+
+            <button
+              onClick={() => setIsFormOpen(false)}
+              className="bg-gray-600 text-white px-4 py-2 rounded"
+            >
+              Cancel
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  /* ================= LIST ================= */
+ return (
+  <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl p-6">
+
+      {/* HEADER */}
+      <h2 className="text-2xl font-semibold text-gray-700 mb-6">
+        Finished Goods
+      </h2>
+
+      {/* TABLE */}
+      <div className="overflow-hidden rounded-lg border">
+        <table className="w-full text-sm text-left">
+
+          {/* HEADER */}
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
+            <tr>
+              <th className="px-4 py-3">FG ID</th>
+              <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">Batch</th>
+              <th className="px-4 py-3 text-center">Actions</th>
+            </tr>
+          </thead>
+
+          {/* BODY */}
+          <tbody>
+            {savedData.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="text-center py-6 text-gray-400">
+                  No Finished Goods Available
+                </td>
+              </tr>
+            ) : (
+              savedData.map((item, i) => (
+                <tr
+                  key={item.fgId || i}
+                  className="border-t hover:bg-gray-50 transition"
+                >
+                  {/* FG ID */}
+                  <td className="px-6 py-4 font-medium text-gray-700">
+                    {item.fgId}
+                  </td>
+
+                  {/* PRODUCT */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {item.product}
+                  </td>
+
+                  {/* BATCH */}
+                  <td className="px-6 py-4 text-gray-600">
+                    {item.batch}
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center gap-3">
+
+                      <button
+                        onClick={() => handleFinish(item)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Finish
+                      </button>
+
+                      <button
+                        onClick={() => handleView(item)}
+                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => handleMove(item)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                      >
+                        Move
+                      </button>
+
+                    </div>
                   </td>
 
                 </tr>
@@ -212,6 +364,8 @@ export default function FinishedGoods() {
 
         </table>
       </div>
+
     </div>
-  );
+  </div>
+);
 }

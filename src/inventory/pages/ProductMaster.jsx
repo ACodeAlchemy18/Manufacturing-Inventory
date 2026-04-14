@@ -10,6 +10,7 @@ export default function ProductMaster() {
     productName: "",
     status: "Pending",      // For enabling/disabling buttons
     stage: "Product Master", // Current stage
+
   });
 
   /* ================= LOAD DATA ================= */
@@ -68,13 +69,13 @@ export default function ProductMaster() {
     const existingWIP = JSON.parse(localStorage.getItem("preAssembling")) || [];
 
     const newItem = {
-      wipId: Date.now(),
-      productId: prod.productId,
-      productName: prod.productName,
-      quantity: 1,
-      status: "In Progress",
-    };
-
+  "WIP ID": Date.now(),
+  "Product ID": String(prod.productId),
+  "Product Name": prod.productName,
+  "Process Stage": "Pre-Assembling",
+  "Current Status": "Pending",
+  source: "ProductMaster",
+};
     // Update WIP
     const updatedWIP = [...existingWIP, newItem];
     localStorage.setItem("preAssembling", JSON.stringify(updatedWIP));

@@ -59,12 +59,20 @@ const reduceRawMaterialQty = (materialName, qtyToReduce) => {
 
 
 
-  // ✅ Load data from localStorage
-  useEffect(() => {
-    setSavedData(JSON.parse(localStorage.getItem("preAssembling")) || []);
-    setProducts(JSON.parse(localStorage.getItem("products")) || []);
-    setRawMaterials(JSON.parse(localStorage.getItem("rawMaterials")) || []);
-  }, []);
+useEffect(() => {
+  const allWIP =
+    JSON.parse(localStorage.getItem("preAssembling")) || [];
+
+  // ✅ Only show items moved from Product Master
+  const filtered = allWIP.filter(
+    (item) => item.source === "ProductMaster"
+  );
+
+  setSavedData(filtered);
+
+  setProducts(JSON.parse(localStorage.getItem("products")) || []);
+  setRawMaterials(JSON.parse(localStorage.getItem("rawMaterials")) || []);
+}, []);
 
   // ================= OPEN FORM =================
   const openForm = (product) => {
@@ -73,7 +81,7 @@ const reduceRawMaterialQty = (materialName, qtyToReduce) => {
     setIsViewing(false);
 
     setFormData({
-      "WIP ID": Date.now(),
+      "WIP ID": product["WIP ID"] || Date.now(),
       "Product Name": product.productName,
       "Product ID": String(product.productId),
       "Process Stage": "Pre-Assembling",
@@ -103,7 +111,7 @@ const addMaterial = () => {
   ]);
 
   // ✅ Reduce quantity in Raw Materials
-  reduceMaterialQuantity(selectedMaterial, quantity);
+ reduceRawMaterialQty(selectedMaterial, quantity);
 
   setSelectedMaterial("");
   setQuantity("");
@@ -121,10 +129,11 @@ const addMaterial = () => {
     }
 
     const newEntry = {
-      ...formData,
-      "Product ID": String(formData["Product ID"]),
-      materials: materialList,
-    };
+  ...formData,
+  "Product ID": String(formData["Product ID"]),
+  materials: materialList,
+  source: "ProductMaster", // ✅ VERY IMPORTANT
+};
 
     const filtered = savedData.filter(
       (d) => String(d["Product ID"]) !== String(formData["Product ID"])
@@ -589,72 +598,98 @@ const moveToPhosphating = (product) => {
                 </tr>
               </thead>
 
-              <tbody>
-                {products
-                  .filter(p => {
-                    const saved = savedData.find(
-                      (sd) => sd["Product ID"] === p.productId
-                    );
-                    // ✅ Show product ONLY if:
-                    // 1. No entry exists (new product)
-                    // 2. OR still in Pre-Assembling stage
+             <tbody>
+  {products.filter(p => {
+    const saved = savedData.find(
+      (sd) => sd["Product ID"] === p.productId
+    );
 
-                    return (
-                      !saved ||
-                      saved["Process Stage"] === "Pre-Assembling" ||
-                      saved["Process Stage"] === ""
-                    );
-                  })
-                  .map((p, i) => {
-                    const saved = savedData.find(
-                      (sd) => sd["Product ID"] === p.productId
-                    );
+    return (
+      saved &&
+      (saved["Process Stage"] === "Pre-Assembling" ||
+       saved["Process Stage"] === "")
+    );
+  }).length === 0 ? (
+    
+    // ✅ EMPTY STATE
+    <tr>
+      <td colSpan="3" className="text-center py-6 text-gray-400">
+        No Products Available
+      </td>
+    </tr>
 
-                    return (
-                      <tr key={i} className="border-t hover:bg-gray-50 transition">
-                        <td className="px-6 py-4 font-medium text-gray-700">{p.productId}</td>
-                        <td className="px-6 py-4 text-gray-600">{p.productName}</td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center gap-3">
+  ) : (
+    
+    // ✅ NORMAL DATA
+    products
+      .filter(p => {
+        const saved = savedData.find(
+          (sd) => sd["Product ID"] === p.productId
+        );
 
-                            <button
-                              onClick={() => openForm(p)}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
-                            >
-                              Add Material
-                            </button>
+        return (
+          saved &&
+          (saved["Process Stage"] === "Pre-Assembling" ||
+           saved["Process Stage"] === "")
+        );
+      })
+      .map((p, i) => {
+        const saved = savedData.find(
+          (sd) => sd["Product ID"] === p.productId
+        );
 
-                            <button
-                              onClick={() => {
-                                if (saved) handleView(p);
-                                else alert("No data available for this product yet.");
-                              }}
-                              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
-                            >
-                              View
-                            </button>
+        return (
+          <tr key={i} className="border-t hover:bg-gray-50 transition">
+            <td className="px-6 py-4 font-medium text-gray-700">
+              {p.productId}
+            </td>
 
-                            <button
-                              onClick={() => {
-                                if (!saved) {
-                                  alert("Cannot move. No material data found yet.");
-                                } else if (saved?.qc?.qcStatus !== "Approved") {
-                                  alert("Cannot move. QC not approved yet.");
-                                } else {
-                                  moveToPhosphating(p); // ✅ only this needed
-                                }
-                              }}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
-                            >
-                              Move to Phosphating
-                            </button>
+            <td className="px-6 py-4 text-gray-600">
+              {p.productName}
+            </td>
 
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
+            <td className="px-6 py-4 text-center">
+              <div className="flex justify-center gap-3">
+
+                <button
+                  onClick={() => openForm(p)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                >
+                  Add Material
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (saved) handleView(p);
+                    else alert("No data available for this product yet.");
+                  }}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                >
+                  View
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!saved) {
+                      alert("Cannot move. No material data found yet.");
+                    } else if (saved?.qc?.qcStatus !== "Approved") {
+                      alert("Cannot move. QC not approved yet.");
+                    } else {
+                      moveToPhosphating(p);
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow"
+                >
+                  Move to Phosphating
+                </button>
+
+              </div>
+            </td>
+          </tr>
+        );
+      })
+  )}
+</tbody>
             </table>
           </div>
         </div>
