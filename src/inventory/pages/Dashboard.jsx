@@ -37,28 +37,6 @@ export default function Dashboard() {
     "Scrap generated 10kg"
   ];
 
-
-
-
-  const deleteAllData = () => {
-  const confirmDelete = window.confirm(
-    "⚠️ This will delete ALL data permanently. Are you sure?"
-  );
-  if (!confirmDelete) return;
-
-  // 🔥 CLEAR ALL STORAGE KEYS
-  localStorage.removeItem("preAssembling");
- 
-
-
-
-  alert("All data deleted successfully 🗑️");
-
-  // 🔄 Refresh page
-  window.location.reload();
-};
-
-
   return (
     <div className="p-6 space-y-8">
 
@@ -66,12 +44,6 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold text-purple-700">
        Dashboard
       </h1>
-       <button
-    onClick={deleteAllData}
-    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-  >
-    Delete All Data
-  </button>
 
       {/* ================= SUMMARY CARDS ================= */}
 

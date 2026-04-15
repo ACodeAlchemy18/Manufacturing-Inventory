@@ -24,6 +24,56 @@ export default function Signup() {
 
   const [error, setError] = useState("");
 
+  // OTP states
+  const [emailOtp, setEmailOtp] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+
+  const [generatedEmailOtp, setGeneratedEmailOtp] = useState("");
+  const [generatedPhoneOtp, setGeneratedPhoneOtp] = useState("");
+
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
+  // NEW: control visibility
+  const [showEmailOtpField, setShowEmailOtpField] = useState(false);
+  const [showPhoneOtpField, setShowPhoneOtpField] = useState(false);
+
+  const generateOtp = () => Math.floor(100000 + Math.random() * 900000);
+
+  const sendEmailOtp = () => {
+    if (!email) return alert("Enter email first");
+    const otp = generateOtp();
+    setGeneratedEmailOtp(otp.toString());
+    setShowEmailOtpField(true);
+    alert("Email OTP: " + otp);
+  };
+
+  const sendPhoneOtp = () => {
+    if (!phone) return alert("Enter phone number first");
+    const otp = generateOtp();
+    setGeneratedPhoneOtp(otp.toString());
+    setShowPhoneOtpField(true);
+    alert("Phone OTP: " + otp);
+  };
+
+  const verifyEmailOtp = () => {
+    if (emailOtp === generatedEmailOtp) {
+      setIsEmailVerified(true);
+      alert("Email Verified ✅");
+    } else {
+      alert("Invalid Email OTP ❌");
+    }
+  };
+
+  const verifyPhoneOtp = () => {
+    if (phoneOtp === generatedPhoneOtp) {
+      setIsPhoneVerified(true);
+      alert("Phone Verified ✅");
+    } else {
+      alert("Invalid Phone OTP ❌");
+    }
+  };
+
   const handleSignup = () => {
     setError("");
 
@@ -41,6 +91,10 @@ export default function Signup() {
       !confirmPassword
     ) {
       return setError("All fields are required except GST Number");
+    }
+
+    if (!isEmailVerified || !isPhoneVerified) {
+      return setError("Please verify Email and Phone using OTP");
     }
 
     if (password.length < 6) {
@@ -72,12 +126,12 @@ export default function Signup() {
   };
 
   return (
-    <div className="h-screen w-full flex bg-[#f6f5f2]">
+    <div className="min-h-screen w-full flex bg-[#f6f5f2]">
 
       {/* LEFT SIDE */}
-      <div className="w-1/2 flex flex-col justify-center px-20">
+      <div className="w-1/2 flex flex-col justify-center px-20 py-10">
 
-        <h2 className="text-5xl font-bold mb-10 text-gray-900">
+        <h2 className="text-4xl font-bold mb-8 text-gray-900">
           Create Account
         </h2>
 
@@ -90,12 +144,38 @@ export default function Signup() {
         />
 
         {/* Email */}
-        <input
-          type="email"
-          placeholder="Your business email"
-          className="w-full mb-4 px-4 py-3 border rounded-md"
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="flex gap-3 mb-4">
+          <input
+            type="email"
+            placeholder="Your business email"
+            className="flex-1 px-4 py-3 border rounded-md"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button
+            onClick={sendEmailOtp}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md"
+          >
+            Send OTP
+          </button>
+        </div>
+
+        {/* Email OTP (conditional) */}
+        {showEmailOtpField && (
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Enter Email OTP"
+              className="flex-1 px-4 py-3 border rounded-md"
+              onChange={(e) => setEmailOtp(e.target.value)}
+            />
+            <button
+              onClick={verifyEmailOtp}
+              className="px-4 py-2 bg-green-500 text-white rounded-md"
+            >
+              Verify
+            </button>
+          </div>
+        )}
 
         {/* Company + Industry */}
         <div className="flex gap-4 mb-4">
@@ -121,21 +201,47 @@ export default function Signup() {
           onChange={(e) => setAddress(e.target.value)}
         />
 
-        {/* Phone + Pin */}
-        <div className="flex gap-4 mb-4">
+        {/* Phone */}
+        <div className="flex gap-3 mb-4">
           <input
             type="tel"
             placeholder="Phone Number"
-            className="w-1/2 px-4 py-3 border rounded-md"
+            className="flex-1 px-4 py-3 border rounded-md"
             onChange={(e) => setPhone(e.target.value)}
           />
-          <input
-            type="text"
-            placeholder="Pin Code"
-            className="w-1/2 px-4 py-3 border rounded-md"
-            onChange={(e) => setPinCode(e.target.value)}
-          />
+          <button
+            onClick={sendPhoneOtp}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md"
+          >
+            Send OTP
+          </button>
         </div>
+
+        {/* Phone OTP */}
+        {showPhoneOtpField && (
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Enter Phone OTP"
+              className="flex-1 px-4 py-3 border rounded-md"
+              onChange={(e) => setPhoneOtp(e.target.value)}
+            />
+            <button
+              onClick={verifyPhoneOtp}
+              className="px-4 py-2 bg-green-500 text-white rounded-md"
+            >
+              Verify
+            </button>
+          </div>
+        )}
+
+        {/* Pin */}
+        <input
+          type="text"
+          placeholder="Pin Code"
+          className="w-full mb-4 px-4 py-3 border rounded-md"
+          onChange={(e) => setPinCode(e.target.value)}
+        />
 
         {/* State + City */}
         <div className="flex gap-4 mb-4">
@@ -161,7 +267,7 @@ export default function Signup() {
           onChange={(e) => setGst(e.target.value)}
         />
 
-        {/* Password + Confirm */}
+        {/* Password */}
         <div className="flex gap-4 mb-4">
           <div className="relative w-1/2">
             <input
@@ -171,7 +277,7 @@ export default function Signup() {
               onChange={(e) => setPassword(e.target.value)}
             />
             <span
-              className="absolute right-3 top-3 cursor-pointer text-gray-500"
+              className="absolute right-3 top-3 cursor-pointer"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? "🙈" : "👁️"}
@@ -186,7 +292,7 @@ export default function Signup() {
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
             <span
-              className="absolute right-3 top-3 cursor-pointer text-gray-500"
+              className="absolute right-3 top-3 cursor-pointer"
               onClick={() => setShowConfirm(!showConfirm)}
             >
               {showConfirm ? "🙈" : "👁️"}
@@ -194,21 +300,18 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Error */}
         {error && (
           <p className="text-red-500 text-sm mb-3">{error}</p>
         )}
 
-        {/* Button */}
         <button
           onClick={handleSignup}
-          className="bg-lime-400 hover:bg-lime-500 text-black font-semibold py-3 rounded-md w-48"
+          className="bg-lime-400 hover:bg-lime-500 text-black font-medium py-3 rounded-md w-48"
         >
           Create Account
         </button>
 
-        {/* Login Link */}
-        <p className="mt-6 text-sm text-gray-600">
+        <p className="mt-5 text-sm text-gray-600">
           Already have an account?{" "}
           <span
             onClick={() => navigate("/login")}
@@ -220,18 +323,24 @@ export default function Signup() {
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="w-1/2 flex items-center justify-center relative">
+      <div className="w-1/2 flex items-center justify-center">
 
-        <div className="absolute w-[400px] h-[250px] bg-white rounded-xl shadow-md rotate-6 opacity-40"></div>
-        <div className="absolute w-[400px] h-[250px] bg-white rounded-xl shadow-md -rotate-6 opacity-40"></div>
+        <div className="w-[500px] h-[350px] bg-white rounded-xl shadow-xl p-8 flex flex-col items-center justify-center">
 
-        <div className="w-[420px] h-[260px] bg-white rounded-xl shadow-xl flex flex-col items-center justify-center">
-          <div className="text-xl font-semibold text-gray-800">
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/5087/5087579.png"
+            alt="signup"
+            className="w-28 mb-5"
+          />
+
+          <div className="text-2xl font-semibold text-gray-800">
             Join us today!
           </div>
-          <p className="text-gray-500 mt-2">
-            Create your account to get started
+
+          <p className="text-gray-500 mt-3 text-center">
+            Create your account and start managing your business smoothly
           </p>
+
         </div>
       </div>
     </div>

@@ -4,30 +4,30 @@ import { useNavigate } from "react-router-dom";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // 👈 NEW
   const navigate = useNavigate();
 
-const handleLogin = () => {
-  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const handleLogin = () => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
 
-  if (!storedUser) {
-    alert("No user found. Please signup first.");
-    return;
-  }
+    if (!storedUser) {
+      alert("No user found. Please signup first.");
+      return;
+    }
 
-  if (email === storedUser.email && password === storedUser.password) {
-    localStorage.setItem("auth", "true");
-    navigate("/inventory");
-  } else {
-    alert("Invalid credentials");
-  }
-};
+    if (email === storedUser.email && password === storedUser.password) {
+      localStorage.setItem("auth", "true");
+      navigate("/inventory");
+    } else {
+      alert("Invalid credentials");
+    }
+  };
 
   return (
     <div className="h-screen w-full flex bg-[#f6f5f2]">
 
       {/* LEFT SIDE (FORM) */}
       <div className="w-1/2 flex flex-col justify-center px-20">
-        
 
         {/* Heading */}
         <h2 className="text-5xl font-bold mb-10 text-gray-900">
@@ -42,13 +42,23 @@ const handleLogin = () => {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        {/* Password */}
-        <input
-          type="password"
-          placeholder="Your password"
-          className="w-full mb-2 px-4 py-3 border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-lime-400"
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {/* Password with Eye Icon */}
+        <div className="relative w-full mb-2">
+          <input
+            type={showPassword ? "text" : "password"} // 👈 CHANGE TYPE
+            placeholder="Your password"
+            className="w-full px-4 py-3 border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-lime-400"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {/* Eye Icon */}
+          <span
+            className="absolute right-3 top-3 cursor-pointer text-gray-500"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </span>
+        </div>
 
         {/* Forgot */}
         <p
@@ -80,14 +90,21 @@ const handleLogin = () => {
 
       {/* RIGHT SIDE (ILLUSTRATION) */}
       <div className="w-1/2 flex items-center justify-center relative">
-        
+
         {/* Background Cards Effect */}
-        <div className="absolute w-[400px] h-[250px] bg-white rounded-xl shadow-md rotate-6 opacity-40"></div>
+        <div className="absolute w-[400px] h-[250px] bg-white rounded-xl shadow-md rotate-6 opacity-20"></div>
         <div className="absolute w-[400px] h-[250px] bg-white rounded-xl shadow-md -rotate-6 opacity-40"></div>
 
         {/* Main Card */}
         <div className="w-[420px] h-[260px] bg-white rounded-xl shadow-xl flex flex-col items-center justify-center">
-          
+
+          {/* 👇 NEW IMAGE */}
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/5087/5087579.png"
+            alt="login"
+            className="w-16 h-16 mb-4"
+          />
+
           <div className="text-xl font-semibold text-gray-800">
             You’re almost there!
           </div>

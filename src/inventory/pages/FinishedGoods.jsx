@@ -29,23 +29,30 @@ export default function FinishedGoods() {
   }, []);
 
   /* ================= OPEN FORM ================= */
-  const handleFinish = (item) => {
-    setSelectedItem(item);
+const handleFinish = (item) => {
+  setSelectedItem(item);
 
-    setFormData({
-      fgId: `FG${Date.now()}`,
-      product: item.product,
-      batch: item.batch,
-      qty: "",
-      packedBy: "",
-      date: new Date().toISOString().split("T")[0],
-      remarks: "",
-      status: "Finished",
-    });
+  // 🔥 Check if already exists
+  const existing = savedData.find(
+    (i) => i.product === item.product && i.batch === item.batch
+  );
 
-    setIsFormOpen(true);
-    setViewData(null);
-  };
+  setFormData({
+    fgId: existing ? existing.fgId : `FG${Date.now()}`, // ✅ FIX
+    product: item.product,
+    batch: item.batch,
+    qty: existing ? existing.qty : "",
+    packedBy: existing ? existing.packedBy : "",
+    date: existing
+      ? existing.date
+      : new Date().toISOString().split("T")[0],
+    remarks: existing ? existing.remarks : "",
+    status: "Finished",
+  });
+
+  setIsFormOpen(true);
+  setViewData(null);
+};
 
   /* ================= SAVE ================= */
   const handleSave = () => {
@@ -67,10 +74,18 @@ export default function FinishedGoods() {
   };
 
   /* ================= VIEW ================= */
-  const handleView = (item) => {
-    const data = savedData.find((i) => i.fgId === item.fgId);
-    setViewData(data);
-  };
+ const handleView = (item) => {
+  const data = savedData.find(
+    (i) => i.product === item.product && i.batch === item.batch
+  );
+
+  if (!data) {
+    alert("No data found. Please finish first.");
+    return;
+  }
+
+  setViewData(data);
+};
 
   /* ================= EDIT ================= */
   const handleEdit = (item) => {
@@ -80,15 +95,23 @@ export default function FinishedGoods() {
   };
 
   /* ================= DELETE ================= */
-  const handleDelete = (id) => {
-    const updated = savedData.filter((i) => i.fgId !== id);
+const handleDelete = (item) => {
+  const updated = savedData.filter(
+    (i) =>
+      !(
+        i.product === item.product &&
+        i.batch === item.batch
+      )
+  );
 
-    setSavedData(updated);
-    localStorage.setItem("finishedGoods", JSON.stringify(updated));
+  setSavedData(updated);
+  localStorage.setItem("finishedGoods", JSON.stringify(updated));
 
-    setViewData(null);
-    alert("Deleted ✅");
-  };
+  setViewData(null);
+
+  alert("Deleted only selected product ✅");
+};
+
 
   /* ================= MOVE TO DISPATCH ================= */
   const handleMove = (item) => {
@@ -176,7 +199,7 @@ export default function FinishedGoods() {
                     </button>
 
                     <button
-                      onClick={() => handleDelete(viewData.fgId)}
+                     onClick={() => handleDelete(viewData)}
                       className="bg-red-500 text-white px-2 py-1 rounded"
                     >
                       Delete

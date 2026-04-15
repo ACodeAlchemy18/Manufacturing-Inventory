@@ -217,13 +217,18 @@ const handleMove = (product) => {
   localStorage.setItem("qualityInspection", JSON.stringify(updatedQC));
 
   // ================= REMOVE FROM FUNCTIONAL TESTING =================
-  const updated = savedData.filter(
-    (item) => item.batch !== product.batch
-  );
+  const updated = savedData.map((item) => {
+  if (item.batch === product.batch) {
+    return {
+      ...item,
+      status: "Completed", // ✅ mark completed
+    };
+  }
+  return item;
+});
 
-  setSavedData(updated);
-  localStorage.setItem("functionalTesting", JSON.stringify(updated));
-
+setSavedData(updated);
+localStorage.setItem("functionalTesting", JSON.stringify(updated));
   // ================= UPDATE UI =================
   setQcData((prev) =>
     prev.filter((p) => p.batch !== product.batch)
