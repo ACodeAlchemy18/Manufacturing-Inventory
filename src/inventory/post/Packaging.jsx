@@ -123,19 +123,19 @@ const handleMove = (product) => {
   }
 
   // ================= MOVE → FINISHED GOODS =================
-  const finished =
-    JSON.parse(localStorage.getItem("finishedGoods")) || [];
+const finished =
+  JSON.parse(localStorage.getItem("finishedGoods")) || [];
 
-  const newFG = {
-    fgId: `FG${Date.now()}`,
-    product: pack.product,
-    batch: pack.batch,
-    qty: pack.qty,
-    packingType: pack.packingType,
-    status: "Ready",
-    date: new Date().toISOString().split("T")[0],
-  };
-
+const newFG = {
+  fgId: `FG${Date.now()}`,
+  productId: pack.productId,   // ✅ Added Product ID
+  product: pack.product,
+  batch: pack.batch,
+  qty: pack.qty,
+  packingType: pack.packingType,
+  status: "Ready",
+  date: new Date().toISOString().split("T")[0],
+};
   localStorage.setItem(
     "finishedGoods",
     JSON.stringify([...finished, newFG])

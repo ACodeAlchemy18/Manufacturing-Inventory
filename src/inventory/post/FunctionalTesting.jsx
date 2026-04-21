@@ -157,12 +157,13 @@ const handleMove = (product) => {
       JSON.parse(localStorage.getItem("packaging")) || [];
 
     const newPack = {
-      packId: `P${Date.now()}`,
-      product: ft.product,
-      batch: ft.batch,
-      status: "Pending",
-      date: new Date().toISOString().split("T")[0],
-    };
+  packId: `P${Date.now()}`,
+  productId: ft.productId,   // ✅ IMPORTANT
+  product: ft.product,
+  batch: ft.batch,
+  status: "Pending",
+  date: new Date().toISOString().split("T")[0],
+};
 
     localStorage.setItem(
       "packaging",

@@ -9,16 +9,16 @@ export default function FinishedGoods() {
   const [viewData, setViewData] = useState(null);
 
   const [formData, setFormData] = useState({
-    fgId: "",
-    product: "",
-    batch: "",
-    qty: "",
-    packedBy: "",
-    date: "",
-    remarks: "",
-    status: "Finished",
-  });
-
+  fgId: "",
+  productId: "",   // ✅ ADD
+  product: "",
+  batch: "",
+  qty: "",
+  packedBy: "",
+  date: "",
+  remarks: "",
+  status: "Finished",
+});
   /* ================= LOAD ================= */
   useEffect(() => {
     const fg = JSON.parse(localStorage.getItem("finishedGoodsQueue")) || [];
@@ -39,6 +39,7 @@ const handleFinish = (item) => {
 
   setFormData({
     fgId: existing ? existing.fgId : `FG${Date.now()}`, // ✅ FIX
+     productId: item.productId,   // ✅ ADD
     product: item.product,
     batch: item.batch,
     qty: existing ? existing.qty : "",
@@ -113,33 +114,68 @@ const handleDelete = (item) => {
 };
 
 
+
+
+
+const updateProductStage = (productId, newStage) => {
+  const products =
+    JSON.parse(localStorage.getItem("products")) || [];
+
+  const updated = products.map((p) =>
+    String(p.productId) === String(productId)
+      ? {
+          ...p,
+          stage: newStage,
+          status: "Moved"
+        }
+      : p
+  );
+
+  localStorage.setItem("products", JSON.stringify(updated));
+};
+
+
+
+
   /* ================= MOVE TO DISPATCH ================= */
-  const handleMove = (item) => {
-    const dispatch =
-      JSON.parse(localStorage.getItem("dispatch")) || [];
+const handleMove = (item) => {
+  const dispatch =
+    JSON.parse(localStorage.getItem("dispatch")) || [];
 
-    const newDispatch = {
-      dispatchId: `D${Date.now()}`,
-      product: item.product,
-      batch: item.batch,
-      qty: item.qty,
-      status: "Ready",
-      date: new Date().toISOString().split("T")[0],
-    };
-
-    localStorage.setItem(
-      "dispatch",
-      JSON.stringify([...dispatch, newDispatch])
-    );
-
-    const updated = savedData.filter((i) => i.fgId !== item.fgId);
-
-    setSavedData(updated);
-    localStorage.setItem("finishedGoods", JSON.stringify(updated));
-
-    setViewData(null);
-    alert("Moved to Dispatch 🚚");
+  const newDispatch = {
+    dispatchId: `D${Date.now()}`,
+    productId: item.productId,
+    product: item.product,
+    batch: item.batch,
+    qty: item.qty,
+    status: "Ready",
+    date: new Date().toISOString().split("T")[0],
   };
+
+  // ✅ Save in dispatch
+  localStorage.setItem(
+    "dispatch",
+    JSON.stringify([...dispatch, newDispatch])
+  );
+
+  // ✅ Remove from Finished Goods
+  const updatedFG = savedData.filter(
+    (i) => i.fgId !== item.fgId
+  );
+
+  setSavedData(updatedFG);
+  localStorage.setItem(
+    "finishedGoods",
+    JSON.stringify(updatedFG)
+  );
+
+  // ✅ Update Product Stage
+  updateProductStage(item.productId, "Dispatch");
+
+  setViewData(null);
+
+  alert("Moved to Dispatch 🚚");
+};
 
   /* ================= VIEW PAGE ================= */
   if (viewData) {
