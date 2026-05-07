@@ -3,58 +3,82 @@ import { motion } from "framer-motion";
 export default function BusinessSection() {
 
   const fadeLeft = {
-    hidden: { opacity: 0, x: -120 },
+    hidden: { opacity: 0, x: -60 },
     show: {
       opacity: 1,
       x: 0,
-      transition: { type: "spring", stiffness: 80, damping: 15 }
+      transition: { duration: 0.6, ease: "easeOut" }
     }
   };
 
   const fadeRight = {
-    hidden: { opacity: 0, x: 120 },
+    hidden: { opacity: 0, x: 60 },
     show: {
       opacity: 1,
       x: 0,
-      transition: { type: "spring", stiffness: 80, damping: 15 }
+      transition: { duration: 0.6, ease: "easeOut" }
     }
   };
 
+  const imageWrapper =
+    "relative overflow-hidden rounded-2xl shadow-xl group will-change-transform";
+
   const imageClass =
-    "w-full h-[260px] md:h-[320px] object-cover rounded-xl shadow-md";
+    "w-full h-[260px] md:h-[340px] object-cover transition duration-500 group-hover:scale-110";
+
+  const overlay =
+    "absolute inset-0 bg-gradient-to-tr from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-500";
+
+  const sectionCard =
+    "bg-[#f8f7f4] rounded-3xl p-6 md:p-10 shadow-md hover:shadow-2xl transition duration-300";
+
+  const fallback =
+    "https://via.placeholder.com/800x500?text=Manufacturing+Image";
 
   return (
-    <section className="bg-white py-28 px-6 md:px-16">
+    <section className="bg-white py-20 md:py-28 px-4 sm:px-6 md:px-16">
 
       {/* Heading */}
       <motion.div
-        initial={{ opacity: 0, y: 60 }}
+        initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 70 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         viewport={{ once: true }}
-        className="text-center max-w-3xl mx-auto mb-28"
+        className="text-center max-w-3xl mx-auto mb-20 md:mb-28"
       >
-        <h2 className="text-4xl font-bold mb-5 leading-tight">
+        <h2 className="text-3xl md:text-5xl font-bold">
           How Our Manufacturing Inventory System Improves Your Production
         </h2>
       </motion.div>
 
-      {/* CONTENT */}
-      <div className="max-w-6xl mx-auto space-y-32">
+      <div className="max-w-6xl mx-auto space-y-16 md:space-y-24">
 
         {/* SECTION 1 */}
-        <div className="grid md:grid-cols-2 gap-16 items-center">
-          <motion.img
+        <div className={`grid md:grid-cols-2 gap-8 md:gap-12 items-center ${sectionCard}`}>
+          
+          <motion.div
             variants={fadeLeft}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            src="https://tse4.mm.bing.net/th/id/OIP.lC83hHfM-QkWa8jU1xJR0gHaEJ?pid=Api&P=0&h=180"
-            className={imageClass}
-          />
+            className={imageWrapper}
+          >
+            <img
+              src="https://images.pexels.com/photos/2569842/pexels-photo-2569842.jpeg"
+              onError={(e) => (e.target.src = fallback)}
+              alt="Factory"
+              className={imageClass}
+            />
+            <div className={overlay}></div>
+          </motion.div>
 
-          <motion.div variants={fadeRight} initial="hidden" whileInView="show">
-            <h3 className="text-2xl font-semibold mb-4 text-purple-600">
+          <motion.div
+            variants={fadeRight}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-purple-600">
               Reduce Production Delays & Material Shortages
             </h3>
             <p className="text-gray-600 mb-6">
@@ -70,9 +94,15 @@ export default function BusinessSection() {
         </div>
 
         {/* SECTION 2 */}
-        <div className="grid md:grid-cols-2 gap-16 items-center">
-          <motion.div variants={fadeLeft} initial="hidden" whileInView="show">
-            <h3 className="text-2xl font-semibold mb-4 text-purple-600">
+        <div className={`grid md:grid-cols-2 gap-8 md:gap-12 items-center ${sectionCard}`}>
+          
+          <motion.div
+            variants={fadeLeft}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-purple-600">
               Track Every Stage of Manufacturing
             </h3>
             <p className="text-gray-600 mb-6">
@@ -86,27 +116,49 @@ export default function BusinessSection() {
             </ul>
           </motion.div>
 
-          <motion.img
+          <motion.div
             variants={fadeRight}
             initial="hidden"
             whileInView="show"
-            src="https://images.unsplash.com/photo-1581092335397-9583eb92d232"
-            className={imageClass}
-          />
+            viewport={{ once: true }}
+            className={imageWrapper}
+          >
+            <img
+              src="https://images.pexels.com/photos/3846554/pexels-photo-3846554.jpeg"
+              onError={(e) => (e.target.src = fallback)}
+              alt="Production"
+              className={imageClass}
+            />
+            <div className={overlay}></div>
+          </motion.div>
         </div>
 
         {/* SECTION 3 */}
-        <div className="grid md:grid-cols-2 gap-16 items-center">
-          <motion.img
+        <div className={`grid md:grid-cols-2 gap-8 md:gap-12 items-center ${sectionCard}`}>
+          
+          <motion.div
             variants={fadeLeft}
             initial="hidden"
             whileInView="show"
-            src="https://tse4.mm.bing.net/th/id/OIP.c1OWKSf8H_bNZqCwFL1vJAHaDt?pid=Api&P=0&h=180"
-            className={imageClass}
-          />
+            viewport={{ once: true }}
+            className={imageWrapper}
+          >
+            <img
+              src="https://images.pexels.com/photos/590020/pexels-photo-590020.jpeg"
+              onError={(e) => (e.target.src = fallback)}
+              alt="Analytics"
+              className={imageClass}
+            />
+            <div className={overlay}></div>
+          </motion.div>
 
-          <motion.div variants={fadeRight} initial="hidden" whileInView="show">
-            <h3 className="text-2xl font-semibold mb-4 text-purple-600">
+          <motion.div
+            variants={fadeRight}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-purple-600">
               Make Smarter Decisions with Data
             </h3>
             <p className="text-gray-600 mb-6">
@@ -122,40 +174,6 @@ export default function BusinessSection() {
         </div>
 
       </div>
-
-      {/* 🔥 CTA SECTION (LIKE YOUR IMAGE) */}
-      <motion.div
-        initial={{ opacity: 0, y: 80 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true }}
-        className="mt-32"
-      >
-        <div className="bg-[#e6c79c] rounded-3xl py-16 px-6 md:px-16 text-center max-w-6xl mx-auto shadow-lg">
-
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-[#4a2e2e]">
-            Get software that works with you
-          </h2>
-
-          <p className="text-gray-800 max-w-2xl mx-auto mb-10 text-lg">
-            Test it yourself for free or book a demo with our team. 
-            Explore features with your own data — no credit card required.
-          </p>
-
-          <div className="flex justify-center gap-4 flex-wrap">
-            <button className="bg-black text-white px-8 py-3 rounded-lg font-semibold 
-              hover:scale-105 hover:shadow-lg transition duration-300">
-              Get started free
-            </button>
-
-            <button className="border-2 border-black px-8 py-3 rounded-lg font-semibold 
-              hover:bg-black hover:text-white transition duration-300">
-              Get a demo
-            </button>
-          </div>
-
-        </div>
-      </motion.div>
 
     </section>
   );

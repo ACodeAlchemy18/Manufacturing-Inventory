@@ -10,9 +10,10 @@ export default function Powdering() {
   const [formData, setFormData] = useState({});
 
 
-
-
-
+  const [rawMaterials, setRawMaterials] = useState([]);
+  const [materialList, setMaterialList] = useState([]);
+  const [selectedMaterial, setSelectedMaterial] = useState("");
+  const [quantity, setQuantity] = useState("");
 
   /* ================= LOAD DATA FUNCTION ================= */
   const loadData = () => {
@@ -21,9 +22,10 @@ export default function Powdering() {
       (p) => p["Process Stage"]?.trim().toLowerCase() === "powdering"
     );
     setSavedData(filtered);
+    setRawMaterials(JSON.parse(localStorage.getItem("rawMaterials")) || []);
   };
 
-  /* ================= INITIAL LOAD ================= */
+  /* ================= I`NITIAL LOAD ================= */
   useEffect(() => {
     loadData();
   }, []);
@@ -60,9 +62,36 @@ export default function Powdering() {
       finishedQty: product?.["Output Qty"] || 0,
       status: "Pending QC",
     });
-
+    setMaterialList(product?.powdering?.materials || []);
     setIsEditing(true);
     setIsViewing(false);
+  };
+
+
+  const addMaterial = () => {
+    if (!selectedMaterial || !quantity) return;
+
+    const qty = Number(quantity);
+
+    setMaterialList([
+      ...materialList,
+      {
+        material: selectedMaterial,
+        qty: qty,
+        usableQty: 0,
+        unusableQty: 0,
+        outputQty: qty,
+      },
+    ]);
+
+    setSelectedMaterial("");
+    setQuantity("");
+  };
+
+
+  const deleteMaterial = (index) => {
+    const updated = materialList.filter((_, i) => i !== index);
+    setMaterialList(updated);
   };
 
 
@@ -81,9 +110,16 @@ export default function Powdering() {
     if (index === -1) return;
 
     // Add a proper Powdering ID
+    const totalOutput = materialList.reduce(
+      (sum, m) => sum + (m.outputQty || m.qty),
+      0
+    );
+
     const powderingData = {
       ...formData,
-      powderingId: formData.wipId, // rename WIP ID as Powdering ID
+      powderingId: formData.wipId,
+      materials: materialList,
+      finishedQty: totalOutput,
     };
 
     data[index].powdering = powderingData;
@@ -102,44 +138,44 @@ export default function Powdering() {
   };
 
   /* ================= MOVE NEXT ================= */
- const moveToNextStage = (product) => {
-  const data = JSON.parse(localStorage.getItem("preAssembling")) || [];
-  const index = data.findIndex((d) => d["WIP ID"] === product["WIP ID"]);
-  if (index === -1) return;
+  const moveToNextStage = (product) => {
+    const data = JSON.parse(localStorage.getItem("preAssembling")) || [];
+    const index = data.findIndex((d) => d["WIP ID"] === product["WIP ID"]);
+    if (index === -1) return;
 
-  // QC check
-  if (!product?.powdering?.qc || product.powdering.qc.qcStatus !== "Approved") {
-    alert("QC not approved yet.");
-    return;
-  }
+    // QC check
+    if (!product?.powdering?.qc || product.powdering.qc.qcStatus !== "Approved") {
+      alert("QC not approved yet.");
+      return;
+    }
 
-  // ✅ Update internal process
-  data[index]["Process Stage"] = "Quality Inspection";
-  data[index]["Current Status"] = "Pending";
+    // ✅ Update internal process
+    data[index]["Process Stage"] = "Quality Inspection";
+    data[index]["Current Status"] = "Pending";
 
-  localStorage.setItem("preAssembling", JSON.stringify(data));
+    localStorage.setItem("preAssembling", JSON.stringify(data));
 
-  // ✅ IMPORTANT: Update Product Master
-  updateProductStage(product["Product ID"], "Quality Inspection");
+    // ✅ IMPORTANT: Update Product Master
+    updateProductStage(product["Product ID"], "Quality Inspection");
 
-  alert(`${product["Product Name"]} moved to Quality Inspection`);
+    alert(`${product["Product Name"]} moved to Quality Inspection`);
 
-  loadData();
-};
+    loadData();
+  };
 
 
-//update
+  //update
   const updateProductStage = (productId, newStage) => {
-  const products = JSON.parse(localStorage.getItem("products")) || [];
+    const products = JSON.parse(localStorage.getItem("products")) || [];
 
-  const updatedProducts = products.map((p) =>
-    p.productId === productId
-      ? { ...p, stage: newStage }
-      : p
-  );
+    const updatedProducts = products.map((p) =>
+      p.productId === productId
+        ? { ...p, stage: newStage }
+        : p
+    );
 
-  localStorage.setItem("products", JSON.stringify(updatedProducts));
-};
+    localStorage.setItem("products", JSON.stringify(updatedProducts));
+  };
 
 
   //edit
@@ -241,6 +277,7 @@ export default function Powdering() {
                   <th className="px-4 py-3 text-left">Curing Time</th>
                   <th className="px-4 py-3 text-left">Powder Used Qty</th>
                   <th className="px-4 py-3 text-left">Incoming Qty</th>
+                  <th className="px-4 py-3 text-left">Material</th>
                   <th className="px-4 py-3 text-left">Scrap</th>
                   <th className="px-4 py-3 text-left">Finished Qty</th>
                   <th className="px-4 py-3 text-center">Action</th>
@@ -261,32 +298,58 @@ export default function Powdering() {
                     <td className="px-4 py-3">{viewData.powdering.powderUsedQty || "-"}</td>
                     <td className="px-4 py-3">{viewData.powdering.incomingQty || "-"}</td>
                     <td className="px-4 py-3 text-xs">
-                      {viewData.powdering.usableQty && (
-                        <div className="text-green-600">
-                          Usable: {viewData.powdering.usableQty} (
-                          {viewData.powdering.usableReason === "Other"
-                            ? viewData.powdering.usableCustomReason
-                            : viewData.powdering.usableReason}
-                          )
-                        </div>
-                      )}
-                      {viewData.powdering.unusableQty && (
-                        <div className="text-red-600">
-                          Unusable: {viewData.powdering.unusableQty} (
-                          {viewData.powdering.unusableReason === "Other"
-                            ? viewData.powdering.unusableCustomReason
-                            : viewData.powdering.unusableReason}
-                          )
-                        </div>
-                      )}
-                      {!viewData.powdering.usableQty && !viewData.powdering.unusableQty && (
+  {viewData.powdering?.materials?.length > 0 ? (
+    viewData.powdering.materials.map((m, i) => (
+      <div key={i} className="mb-2">
+        {m.material}
+      </div>
+    ))
+  ) : (
+    <span className="text-gray-400">No Material</span>
+  )}
+</td>
+                    
+                    <td className="px-4 py-3 text-xs">
+                      {viewData.powdering?.materials?.length > 0 ? (
+                        viewData.powdering.materials.map((m, i) => (
+                          <div key={i} className="mb-3 border-b pb-2">
+
+                            {m.usableQty > 0 && (
+                              <div className="text-green-600">
+                                Usable: {m.usableQty} (
+                                {m.usableReason === "Other"
+                                  ? m.usableCustomReason
+                                  : m.usableReason}
+                                )
+                              </div>
+                            )}
+
+                            {m.unusableQty > 0 && (
+                              <div className="text-red-600">
+                                Unusable: {m.unusableQty} (
+                                {m.unusableReason === "Other"
+                                  ? m.unusableCustomReason
+                                  : m.unusableReason}
+                                )
+                              </div>
+                            )}
+
+                          </div>
+                        ))
+                      ) : (
                         <span className="text-gray-400">No Scrap</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                        {viewData.powdering.finishedQty || viewData.powdering.incomingQty || "-"}
-                      </span>
+                    <td className="px-4 py-3 text-xs">
+                      {viewData.powdering?.materials?.length > 0 ? (
+                        viewData.powdering.materials.map((m, i) => (
+                          <div key={i} className="mb-2 text-green-600 font-medium">
+                            {m.outputQty}
+                          </div>
+                        ))
+                      ) : (
+                        "-"
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-2">
@@ -435,10 +498,10 @@ export default function Powdering() {
                       <td className="px-4 py-3">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${viewData.powdering.qc.qcStatus === "Approved"
-                              ? "bg-green-100 text-green-700"
-                              : viewData.powdering.qc.qcStatus === "Rejected"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
+                            ? "bg-green-100 text-green-700"
+                            : viewData.powdering.qc.qcStatus === "Rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
                             }`}
                         >
                           {viewData.powdering.qc.qcStatus}
@@ -618,126 +681,201 @@ export default function Powdering() {
               />
             </div>
 
-            {/* 🔥 SCRAP SECTION */}
+
+
+            {/* ADD MATERIAL */}
             <div className="col-span-2 border p-4 rounded bg-gray-50">
-              <h3 className="text-sm font-semibold mb-3">Scrap Details</h3>
+              <h3 className="font-semibold mb-3">Add Material</h3>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex gap-3">
 
-                {/* USABLE SCRAP */}
-                <div className="flex gap-4 items-end">
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Usable Qty</label>
-                    <input
-                      type="number"
-                      placeholder="Usable Qty"
-                      value={formData.usableQty}
-                      onChange={(e) => {
-                        const usable = Number(e.target.value) || 0;
-                        const unusable = Number(formData.unusableQty) || 0;
-                        const input = Number(formData.incomingQty) || 0;
-                        setFormData({
-                          ...formData,
-                          usableQty: usable,
-                          finishedQty: Math.max(0, input - (usable + unusable)),
-                        });
-                      }}
-                      className="border p-2 w-32"
-                    />
-                  </div>
+                <select
+                  value={selectedMaterial}
+                  onChange={(e) => setSelectedMaterial(e.target.value)}
+                  className="border p-2 w-1/2"
+                >
+                  <option value="">Select Material</option>
 
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Reason</label>
-                    <select
-                      value={formData.usableReason}
-                      onChange={(e) => setFormData({ ...formData, usableReason: e.target.value })}
-                      className="border p-2"
-                    >
-                      <option value="">Reason</option>
-                      <option>Rework</option>
-                      <option>Powder Recovery</option>
-                      <option>Carry Forward</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
+                  {rawMaterials.map((rm, i) => (
+                    <option key={i}>
+                      {rm["Material Name"]}
+                    </option>
+                  ))}
+                </select>
 
-                  {formData.usableReason === "Other" && (
-                    <div className="flex flex-col">
-                      <label className="text-xs text-gray-500 mb-1">Custom Reason</label>
-                      <input
-                        type="text"
-                        placeholder="Enter reason"
-                        value={formData.usableCustomReason}
-                        onChange={(e) => setFormData({ ...formData, usableCustomReason: e.target.value })}
-                        className="border p-2"
-                      />
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="number"
+                  placeholder="Qty"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="border p-2 w-32"
+                />
 
-                {/* UNUSABLE SCRAP */}
-                <div className="flex gap-4 items-end">
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Unusable Qty</label>
-                    <input
-                      type="number"
-                      placeholder="Unusable Qty"
-                      value={formData.unusableQty}
-                      onChange={(e) => {
-                        const unusable = Number(e.target.value) || 0;
-                        const usable = Number(formData.usableQty) || 0;
-                        const input = Number(formData.incomingQty) || 0;
-                        setFormData({
-                          ...formData,
-                          unusableQty: unusable,
-                          finishedQty: Math.max(0, input - (usable + unusable)),
-                        });
-                      }}
-                      className="border p-2 w-32"
-                    />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-xs text-gray-500 mb-1">Reason</label>
-                    <select
-                      value={formData.unusableReason}
-                      onChange={(e) => setFormData({ ...formData, unusableReason: e.target.value })}
-                      className="border p-2"
-                    >
-                      <option value="">Reason</option>
-                      <option>Burnt</option>
-                      <option>Over Coating</option>
-                      <option>Defect</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-
-                  {formData.unusableReason === "Other" && (
-                    <div className="flex flex-col">
-                      <label className="text-xs text-gray-500 mb-1">Custom Reason</label>
-                      <input
-                        type="text"
-                        placeholder="Enter reason"
-                        value={formData.unusableCustomReason}
-                        onChange={(e) => setFormData({ ...formData, unusableCustomReason: e.target.value })}
-                        className="border p-2"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* FINISHED QTY */}
-                <div className="flex flex-col">
-                  <label className="text-xs text-gray-500 mb-1">Finished Qty</label>
-                  <input
-                    value={formData.finishedQty}
-                    readOnly
-                    className="border p-2 bg-gray-100 w-32"
-                  />
-                </div>
+                <button
+                  onClick={addMaterial}
+                  className="bg-blue-600 text-white px-4 rounded"
+                >
+                  Add
+                </button>
 
               </div>
             </div>
+
+
+            <div className="col-span-2 border rounded overflow-hidden">
+              <table className="w-full text-sm">
+
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2">Material</th>
+                    <th className="p-2">Qty</th>
+                    <th className="p-2">Scrap</th>
+                    <th className="p-2">Output</th>
+                    <th className="p-2">Action</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {materialList.map((m, i) => (
+                    <tr key={i} className="border-t">
+
+                      <td className="p-2">{m.material}</td>
+
+                      <td className="p-2">{m.qty}</td>
+
+                      <td className="p-2">
+                        <div className="flex flex-col gap-2">
+
+                          {/* USABLE */}
+                          <div className="flex gap-2">
+
+                            <input
+                              type="number"
+                              placeholder="Usable Qty"
+                              value={m.usableQty || ""}
+                              onChange={(e) => {
+                                const updated = [...materialList];
+                                updated[i].usableQty = Number(e.target.value) || 0;
+
+                                updated[i].outputQty =
+                                  updated[i].qty -
+                                  updated[i].usableQty -
+                                  updated[i].unusableQty;
+
+                                setMaterialList(updated);
+                              }}
+                              className="border p-1 w-24"
+                            />
+
+                            <select
+                              value={m.usableReason || ""}
+                              onChange={(e) => {
+                                const updated = [...materialList];
+                                updated[i].usableReason = e.target.value;
+                                setMaterialList(updated);
+                              }}
+                              className="border p-1"
+                            >
+                              <option value="">Reason</option>
+                              <option>Rework</option>
+                              <option>Powder Recovery</option>
+                              <option>Carry Forward</option>
+                              <option>Other</option>
+                            </select>
+
+                            {m.usableReason === "Other" && (
+                              <input
+                                type="text"
+                                placeholder="Enter Reason"
+                                value={m.usableCustomReason || ""}
+                                onChange={(e) => {
+                                  const updated = [...materialList];
+                                  updated[i].usableCustomReason = e.target.value;
+                                  setMaterialList(updated);
+                                }}
+                                className="border p-1"
+                              />
+                            )}
+
+                          </div>
+
+                          {/* UNUSABLE */}
+                          <div className="flex gap-2">
+
+                            <input
+                              type="number"
+                              placeholder="Unusable Qty"
+                              value={m.unusableQty || ""}
+                              onChange={(e) => {
+                                const updated = [...materialList];
+                                updated[i].unusableQty = Number(e.target.value) || 0;
+
+                                updated[i].outputQty =
+                                  updated[i].qty -
+                                  updated[i].usableQty -
+                                  updated[i].unusableQty;
+
+                                setMaterialList(updated);
+                              }}
+                              className="border p-1 w-24"
+                            />
+
+                            <select
+                              value={m.unusableReason || ""}
+                              onChange={(e) => {
+                                const updated = [...materialList];
+                                updated[i].unusableReason = e.target.value;
+                                setMaterialList(updated);
+                              }}
+                              className="border p-1"
+                            >
+                              <option value="">Reason</option>
+                              <option>Burnt</option>
+                              <option>Over Coating</option>
+                              <option>Defect</option>
+                              <option>Other</option>
+                            </select>
+
+                            {m.unusableReason === "Other" && (
+                              <input
+                                type="text"
+                                placeholder="Enter Reason"
+                                value={m.unusableCustomReason || ""}
+                                onChange={(e) => {
+                                  const updated = [...materialList];
+                                  updated[i].unusableCustomReason = e.target.value;
+                                  setMaterialList(updated);
+                                }}
+                                className="border p-1"
+                              />
+                            )}
+
+                          </div>
+
+                        </div>
+                      </td>
+
+                      <td className="p-2">
+                        {m.outputQty}
+                      </td>
+
+                      <td className="p-2">
+                        <button
+                          onClick={() => deleteMaterial(i)}
+                          className="text-red-500"
+                        >
+                          Delete
+                        </button>
+                      </td>
+
+                    </tr>
+                  ))}
+                </tbody>
+
+              </table>
+            </div>
+
+
 
           </div>
 

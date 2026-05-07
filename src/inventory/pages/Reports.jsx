@@ -369,82 +369,107 @@ const StatusBadge = ({ text, type = "default" }) => {
 
               {/* POWDERING */}
               {/* POWDERING */}
+              {/* POWDERING */}
+<tr>
+  <td className="border p-2 font-semibold">
+    Powdering
+  </td>
+
+  <td className="border p-2">
+    {report.powdering ? (
+      <div>
+
+        {/* BASIC INFO */}
+        <div className="mb-2 text-sm">
+          <strong>ID:</strong> {report.powdering.powderingId} <br />
+          <strong>Date:</strong> {report.powdering.date} <br />
+          <strong>Powder Type:</strong> {report.powdering.powderType || "-"} <br />
+          <strong>Color Code:</strong> {report.powdering.colorCode || "-"} <br />
+          <strong>Thickness:</strong> {report.powdering.coatingThickness || "-"} <br />
+          <strong>Oven Temp:</strong> {report.powdering.ovenTemperature || "-"} <br />
+          <strong>Curing Time:</strong> {report.powdering.curingTime || "-"} <br />
+          <strong>Powder Used:</strong> {report.powdering.powderUsedQty || "-"} <br />
+          <strong>Incoming Qty:</strong> {report.powdering.incomingQty || "-"} <br />
+          <strong>Finished Qty:</strong> {report.powdering.finishedQty || "-"}
+        </div>
+
+        {/* MATERIAL TABLE */}
+        <table className="w-full border text-xs">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-1">Material</th>
+              <th className="border p-1">Input</th>
+              <th className="border p-1">Usable Scrap</th>
+              <th className="border p-1">Unusable Scrap</th>
+              <th className="border p-1">Output</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {report.powdering.materials?.length > 0 ? (
+              report.powdering.materials.map((m, i) => (
+                <tr key={i}>
+                  <td className="border p-1">{m.material}</td>
+
+                  <td className="border p-1">{m.qty}</td>
+
+                  {/* ✅ USABLE */}
+                  <td className="border p-1 text-green-600">
+                    {m.usableQty
+                      ? `${m.usableQty} (${m.usableReason === "Other"
+                          ? m.usableCustomReason
+                          : m.usableReason})`
+                      : "-"}
+                  </td>
+
+                  {/* ❌ UNUSABLE */}
+                  <td className="border p-1 text-red-600">
+                    {m.unusableQty
+                      ? `${m.unusableQty} (${m.unusableReason === "Other"
+                          ? m.unusableCustomReason
+                          : m.unusableReason})`
+                      : "-"}
+                  </td>
+
+                  <td className="border p-1">
+                    {m.outputQty ?? m.qty}
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <td className="border p-2">Powdering</td>
-
-                <td className="border p-2">
-                  {report.powdering ? (
-                    <div className="text-xs space-y-1">
-
-                      <div><b>ID:</b> {report.powdering.powderingId}</div>
-                      <div><b>Date:</b> {report.powdering.date}</div>
-
-                      <div><b>Powder Type:</b> {report.powdering.powderType}</div>
-                      <div><b>Color Code:</b> {report.powdering.colorCode}</div>
-
-                      <div><b>Coating Thickness:</b> {report.powdering.coatingThickness}</div>
-                      <div><b>Oven Temp:</b> {report.powdering.ovenTemperature}</div>
-                      <div><b>Curing Time:</b> {report.powdering.curingTime}</div>
-
-                      <div><b>Powder Used:</b> {report.powdering.powderUsedQty}</div>
-
-                      <div><b>Incoming Qty:</b> {report.powdering.incomingQty}</div>
-                      <div><b>Finished Qty:</b> {report.powdering.finishedQty}</div>
-
-                      {/* 🔥 SCRAP DETAILS */}
-                      <div className="mt-2">
-                        <b>Scrap:</b>
-
-                        {report.powdering.usableQty ? (
-                          <div className="text-green-600">
-                            Usable: {report.powdering.usableQty} (
-                            {report.powdering.usableReason === "Other"
-                              ? report.powdering.usableCustomReason
-                              : report.powdering.usableReason}
-                            )
-                          </div>
-                        ) : null}
-
-                        {report.powdering.unusableQty ? (
-                          <div className="text-red-600">
-                            Unusable: {report.powdering.unusableQty} (
-                            {report.powdering.unusableReason === "Other"
-                              ? report.powdering.unusableCustomReason
-                              : report.powdering.unusableReason}
-                            )
-                          </div>
-                        ) : null}
-
-                        {!report.powdering.usableQty &&
-                          !report.powdering.unusableQty && (
-                            <div>No Scrap</div>
-                          )}
-                      </div>
-
-                    </div>
-                  ) : (
-                    "Not Done"
-                  )}
-                  {report.powdering?.qc && (
-                    <div className="mt-2 text-xs border-t pt-1">
-                      <b>QC Details:</b>
-                      <div>Status: {report.powdering.qc.qcStatus}</div>
-                      <div>Checked By: {report.powdering.qc.qcCheckedBy}</div>
-                      <div>Date: {report.powdering.qc.qcDate}</div>
-                      <div>Remarks: {report.powdering.qc.qcRemarks}</div>
-                    </div>
-                  )}
+                <td colSpan="5" className="text-center p-2 text-gray-400">
+                  No Materials
                 </td>
-
-
-                {/* STATUS COLUMN */}
-                <td className="border p-2">
-                  {report.powdering?.qc
-                    ? report.powdering.qc.qcStatus
-                    : report.powdering?.status || "-"}
-                </td>
-
               </tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* QC DETAILS */}
+        {report.powdering.qc && (
+          <div className="mt-3 text-xs border p-2 bg-gray-50">
+            <strong>QC:</strong><br />
+            Status: {report.powdering.qc.qcStatus} <br />
+            Checked By: {report.powdering.qc.qcCheckedBy} <br />
+            Date: {report.powdering.qc.qcDate} <br />
+            Remarks: {report.powdering.qc.qcRemarks}
+          </div>
+        )}
+
+      </div>
+    ) : (
+      "Not Done"
+    )}
+  </td>
+
+  {/* STATUS COLUMN */}
+  <td className="border p-2">
+    {report.powdering?.qc
+      ? report.powdering.qc.qcStatus
+      : report.powdering?.status || "-"}
+  </td>
+</tr>
 
               {/* QUALITY */}
               {/* QUALITY INSPECTION */}

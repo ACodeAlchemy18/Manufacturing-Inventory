@@ -1,82 +1,125 @@
-import {
-  FaIndustry,
-  FaEnvelope,
-  FaPhone,
-  FaLinkedin,
-  FaGithub,
-  FaTwitter
-} from "react-icons/fa6";
+import { FaFacebookF, FaTwitter, FaLinkedinIn, FaInstagram } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function Footer() {
+  const navigate = useNavigate();
+
   return (
-    <footer className="bg-black text-gray-300 pt-20 pb-8 px-12">
+    <footer className="bg-[#0f172a] text-white px-6 md:px-12 py-16">
       
-      <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto">
 
-        {/* Column 1 - About */}
-        <div>
-          <h3 className="flex items-center gap-2 text-xl font-bold mb-4 text-white">
-            <FaIndustry />
-            Manufacturing
-          </h3>
+        {/* Top Section */}
+        <div className="grid md:grid-cols-4 gap-12 mb-12">
 
-          <p className="text-gray-400 leading-relaxed">
-            Smart manufacturing inventory software to manage raw materials,
-            WIP stages, finished goods, and reports with real-time control.
-          </p>
+          {/* Brand */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2
+              onClick={() => navigate("/")}
+              className="text-2xl font-bold cursor-pointer mb-4"
+            >
+              Manufacto
+            </h2>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Smart manufacturing inventory system to track raw materials,
+              production, and finished goods in real-time.
+            </p>
+
+            {/* Social Icons */}
+            <div className="flex space-x-4 mt-6">
+              {[FaFacebookF, FaTwitter, FaLinkedinIn, FaInstagram].map(
+                (Icon, index) => (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.2 }}
+                    className="bg-white/10 p-2 rounded-full cursor-pointer hover:bg-white hover:text-[#0f172a] transition"
+                  >
+                    <Icon size={14} />
+                  </motion.div>
+                )
+              )}
+            </div>
+          </motion.div>
+
+          {/* Links 1 */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <h3 className="font-semibold mb-4">Product</h3>
+            <ul className="space-y-3 text-gray-400 text-sm">
+              <li className="hover:text-white cursor-pointer">Features</li>
+              <li className="hover:text-white cursor-pointer">Pricing</li>
+              <li className="hover:text-white cursor-pointer">Use Cases</li>
+              <li className="hover:text-white cursor-pointer">Demo</li>
+            </ul>
+          </motion.div>
+
+          {/* Links 2 */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <h3 className="font-semibold mb-4">Company</h3>
+            <ul className="space-y-3 text-gray-400 text-sm">
+              <li className="hover:text-white cursor-pointer">About Us</li>
+              <li className="hover:text-white cursor-pointer">Careers</li>
+              <li className="hover:text-white cursor-pointer">Blog</li>
+              <li className="hover:text-white cursor-pointer">Contact</li>
+            </ul>
+          </motion.div>
+
+          {/* Newsletter */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <h3 className="font-semibold mb-4">Stay Updated</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Subscribe to get latest updates about manufacturing tech.
+            </p>
+
+            <div className="flex items-center bg-white/10 rounded-lg overflow-hidden">
+              <input
+                type="email"
+                placeholder="Enter email"
+                className="bg-transparent px-4 py-2 w-full outline-none text-sm"
+              />
+              <button className="bg-lime-400 text-black px-4 py-2 text-sm font-semibold hover:bg-lime-500 transition">
+                Subscribe
+              </button>
+            </div>
+          </motion.div>
+
         </div>
 
-        {/* Column 2 - Product */}
-        <div>
-          <h4 className="font-semibold mb-4 text-lg text-white">Product</h4>
-          <ul className="space-y-3 text-gray-400">
-            <li className="hover:text-white cursor-pointer transition">Features</li>
-            <li className="hover:text-white cursor-pointer transition">Use Cases</li>
-            <li className="hover:text-white cursor-pointer transition">Pricing</li>
-            <li className="hover:text-white cursor-pointer transition">Demo</li>
-          </ul>
-        </div>
+        {/* Divider */}
+        <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
 
-        {/* Column 3 - Modules */}
-        <div>
-          <h4 className="font-semibold mb-4 text-lg text-white">
-            Inventory Modules
-          </h4>
-          <ul className="space-y-3 text-gray-400">
-            <li className="hover:text-white cursor-pointer transition">Raw Materials</li>
-            <li className="hover:text-white cursor-pointer transition">WIP Inventory</li>
-            <li className="hover:text-white cursor-pointer transition">Finished Goods</li>
-            <li className="hover:text-white cursor-pointer transition">Stock Movement</li>
-          </ul>
-        </div>
-
-        {/* Column 4 - Contact */}
-        <div>
-          <h4 className="font-semibold mb-4 text-lg text-white">Contact</h4>
-
-          <p className="flex items-center gap-2 text-gray-400 mb-3">
-            <FaEnvelope /> support@manufacturing.com
+          <p className="text-gray-400 text-sm">
+            © {new Date().getFullYear()} Manufacto. All rights reserved.
           </p>
 
-          <p className="flex items-center gap-2 text-gray-400 mb-4">
-            <FaPhone /> +91 98765 43210
-          </p>
-
-          {/* Social Icons */}
-          <div className="flex gap-4 text-xl text-gray-400">
-            <FaLinkedin className="cursor-pointer hover:text-white transition" />
-            <FaGithub className="cursor-pointer hover:text-white transition" />
-            <FaTwitter className="cursor-pointer hover:text-white transition" />
+          <div className="flex space-x-6 text-gray-400 text-sm">
+            <span className="hover:text-white cursor-pointer">
+              Privacy Policy
+            </span>
+            <span className="hover:text-white cursor-pointer">
+              Terms of Service
+            </span>
           </div>
+
         </div>
 
       </div>
-
-      {/* Bottom Bar */}
-      <div className="border-t border-gray-700 mt-12 pt-6 text-center text-gray-500 text-sm">
-        © 2026 Manufacturing Inventory System | All Rights Reserved
-      </div>
-
     </footer>
   );
 }

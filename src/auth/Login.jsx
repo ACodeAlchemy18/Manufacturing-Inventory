@@ -17,6 +17,7 @@ export default function Login() {
 
     if (email === storedUser.email && password === storedUser.password) {
       localStorage.setItem("auth", "true");
+      localStorage.setItem("loggedInUser", JSON.stringify(storedUser)); // 👈 ADD THIS
       navigate("/inventory");
     } else {
       alert("Invalid credentials");

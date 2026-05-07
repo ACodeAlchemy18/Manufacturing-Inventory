@@ -1,5 +1,6 @@
-import { FaQuoteLeft, FaQuoteRight } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { FaQuoteLeft } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Testimonials() {
   const testimonials = [
@@ -25,62 +26,111 @@ export default function Testimonials() {
     }
   ];
 
+  const [index, setIndex] = useState(0);
+
+  // Auto slide
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % testimonials.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const prevSlide = () => {
+    setIndex((prev) =>
+      prev === 0 ? testimonials.length - 1 : prev - 1
+    );
+  };
+
+  const nextSlide = () => {
+    setIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
   return (
     <section className="bg-[#f8f7f4] py-24 px-6 md:px-12">
 
-      {/* Heading */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        viewport={{ once: true }}
-        className="text-center max-w-3xl mx-auto mb-20"
-      >
-        <h2 className="text-4xl font-bold mb-4">
-          What Manufacturers Say
-        </h2>
-        <p className="text-gray-500 text-lg">
-          Trusted by production teams to improve efficiency and control operations.
-        </p>
-      </motion.div>
+      <div className="max-w-6xl mx-auto text-center">
 
-      {/* Grid */}
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
+        {/* Heading */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="mb-16"
+        >
+          <h2 className="text-4xl font-bold mb-4 text-gray-900">
+            What Manufacturers Say
+          </h2>
+          <p className="text-gray-500 text-lg">
+            Trusted by production teams to improve efficiency and control operations.
+          </p>
+        </motion.div>
 
-        {testimonials.map((item, index) => (
-          <motion.div
-            key={index}
-            initial={{
-              opacity: 0,
-              x: index % 2 === 0 ? -100 : 100 // left/right
-            }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.2 }}
-            viewport={{ once: true }}
-            className="bg-[#e9e6df] p-8 rounded-[20px] relative 
-                       hover:shadow-2xl hover:scale-[1.03] 
-                       transition duration-300"
-          >
+        {/* Slider */}
+        <div className="relative max-w-3xl mx-auto">
 
-            <FaQuoteLeft className="text-purple-400 text-xl mb-4" />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: 80 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -80 }}
+              transition={{ duration: 0.5 }}
+              className="bg-[#e9e6df] p-10 rounded-2xl shadow-lg"
+            >
 
-            <p className="text-gray-800 leading-relaxed mb-6 text-[15px]">
-              {item.text}
-            </p>
+              <FaQuoteLeft className="text-purple-400 text-2xl mb-6 mx-auto" />
 
-            <div>
-              <h4 className="font-semibold text-gray-900 text-sm">
-                {item.name}
-              </h4>
-              <p className="text-gray-500 text-xs">
-                {item.role}
+              <p className="text-gray-800 text-lg leading-relaxed mb-8">
+                {testimonials[index].text}
               </p>
+
+              <div>
+                <h4 className="font-semibold text-gray-900">
+                  {testimonials[index].name}
+                </h4>
+                <p className="text-gray-500 text-sm">
+                  {testimonials[index].role}
+                </p>
+              </div>
+
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Controls */}
+          <div className="flex justify-center items-center gap-6 mt-8">
+
+            <button
+              onClick={prevSlide}
+              className="px-4 py-2 border border-black rounded-full hover:bg-black hover:text-white transition"
+            >
+              ←
+            </button>
+
+            {/* Dots */}
+            <div className="flex gap-2">
+              {testimonials.map((_, i) => (
+                <span
+                  key={i}
+                  onClick={() => setIndex(i)}
+                  className={`w-3 h-3 rounded-full cursor-pointer transition ${
+                    i === index ? "bg-black" : "bg-gray-400"
+                  }`}
+                />
+              ))}
             </div>
 
-            <FaQuoteRight className="text-purple-400 text-xl absolute bottom-4 right-4 opacity-70" />
+            <button
+              onClick={nextSlide}
+              className="px-4 py-2 border border-black rounded-full hover:bg-black hover:text-white transition"
+            >
+              →
+            </button>
 
-          </motion.div>
-        ))}
+          </div>
+
+        </div>
 
       </div>
     </section>
