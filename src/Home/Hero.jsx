@@ -17,21 +17,22 @@ export default function Hero() {
         >
           {/* Tag */}
           <span className="bg-black text-white px-4 py-1 rounded-full text-sm">
-            Manufacturing Simplified
+            Smart Manufacturing ERP
           </span>
 
           {/* Heading */}
-          <h1 className="text-4xl md:text-6xl font-bold mt-6 leading-tight text-gray-900">
-            Manage Your Entire{" "}
-            <span className="text-black">Manufacturing</span>{" "}
-            in One Place
-          </h1>
+         <h1 className="text-4xl md:text-6xl font-bold mt-6 leading-tight text-gray-900">
+  Transform Your{" "}
+  <span className="bg-gradient-to-r from-lime-500 to-green-600 bg-clip-text text-transparent">
+    Manufacturing Operations
+  </span>{" "}
+  with Smart ERP
+</h1>
 
           {/* Description */}
           <p className="text-gray-600 mt-6 text-lg max-w-lg">
-            Track raw materials, monitor production, manage inventory,
-            and optimize your factory workflow with a powerful system
-            built for manufacturers.
+            Manage production, inventory, procurement, quality, and
+            finances from a single platform 
           </p>
 
           {/* Buttons */}
@@ -40,18 +41,19 @@ export default function Hero() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/demo")}
               className="bg-lime-400 px-6 py-3 rounded-lg font-semibold hover:bg-lime-500 transition"
             >
-              Get Started Free
+              Request Demo
             </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/contact")}
               className="border border-black px-6 py-3 rounded-lg hover:bg-black hover:text-white transition"
             >
-              Book a Demo
+              Contact Sales
             </motion.button>
 
           </div>
@@ -60,9 +62,9 @@ export default function Hero() {
           <div className="flex gap-8 mt-12">
 
             {[
-              { value: "500+", label: "Factories" },
-              { value: "30%", label: "Cost Reduction" },
-              { value: "99%", label: "Accuracy" }
+              { value: "500+", label: "Manufacturers" },
+              { value: "35%", label: "Efficiency Gain" },
+              { value: "99.9%", label: "Data Accuracy" }
             ].map((item, index) => (
               <motion.div
                 key={index}
@@ -94,7 +96,7 @@ export default function Hero() {
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <h4 className="font-semibold text-gray-800">
-                Inventory Overview
+                ERP Dashboard Overview
               </h4>
               <span className="text-xs bg-lime-400 px-3 py-1 rounded-full">
                 Live
@@ -105,30 +107,30 @@ export default function Hero() {
             <div className="grid grid-cols-2 gap-4">
 
               <div className="bg-[#f5f3ee] p-4 rounded-xl">
-                <p className="text-sm text-gray-500">Raw Material</p>
+                <p className="text-sm text-gray-500">Production Orders</p>
                 <h3 className="text-xl font-bold text-gray-900">
-                  1,250 kg
+                  1,250
                 </h3>
               </div>
 
               <div className="bg-[#f5f3ee] p-4 rounded-xl">
-                <p className="text-sm text-gray-500">WIP</p>
+                <p className="text-sm text-gray-500">Inventory Status</p>
                 <h3 className="text-xl font-bold text-gray-900">
-                  430 units
+                  98%
                 </h3>
               </div>
 
               <div className="bg-[#f5f3ee] p-4 rounded-xl">
-                <p className="text-sm text-gray-500">Finished Goods</p>
+                <p className="text-sm text-gray-500">Quality Score</p>
                 <h3 className="text-xl font-bold text-gray-900">
-                  820 units
+                  99.2%
                 </h3>
               </div>
 
               <div className="bg-[#f5f3ee] p-4 rounded-xl">
-                <p className="text-sm text-gray-500">Scrap</p>
-                <h3 className="text-xl font-bold text-red-500">
-                  12%
+                <p className="text-sm text-gray-500">Cost Savings</p>
+                <h3 className="text-xl font-bold text-green-500">
+                  30%
                 </h3>
               </div>
 
@@ -141,7 +143,7 @@ export default function Hero() {
             transition={{ repeat: Infinity, duration: 3 }}
             className="absolute -top-6 -left-6 bg-black text-white px-4 py-3 rounded-xl shadow-lg text-sm"
           >
-            Production Active
+            Production Running Smoothly
           </motion.div>
 
           <motion.div
@@ -149,7 +151,7 @@ export default function Hero() {
             transition={{ repeat: Infinity, duration: 3 }}
             className="absolute -bottom-6 -right-6 bg-lime-400 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold"
           >
-            Orders Increasing 📈
+            Business Growth 📈
           </motion.div>
 
         </motion.div>

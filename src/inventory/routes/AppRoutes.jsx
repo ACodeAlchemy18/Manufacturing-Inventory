@@ -26,7 +26,12 @@ import Dispatch from "../post/Dispatch";
 export default function AppRoutes() {
   return (
    <Routes>
-  <Route path="/" element={<DashboardLayout />}>
+  {/* ✅ Separate Profile Page */}
+      <Route path="/profile" element={<Profile />} />
+
+      {/* ✅ Dashboard Layout Routes */}
+      <Route path="/" element={<DashboardLayout />}>
+
 
     {/* Default */}
     <Route index element={<Dashboard />} />

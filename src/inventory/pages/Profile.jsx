@@ -9,14 +9,30 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [teamMembers, setTeamMembers] = useState([]);
+
+
+const [showMemberForm, setShowMemberForm] = useState(false);
+
+const [memberForm, setMemberForm] = useState({
+  name: "",
+  email: "",
+  role: "",
+  password: "",
+});
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
-    setUser(stored);
+  const stored = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
+  setUser(stored);
 
-    const sub = localStorage.getItem("subscribed");
-    setIsSubscribed(sub === "true");
-  }, []);
+  const sub = localStorage.getItem("subscribed");
+  setIsSubscribed(sub === "true");
+
+  const savedMembers =
+    JSON.parse(localStorage.getItem("teamMembers")) || [];
+
+  setTeamMembers(savedMembers);
+}, []);
 
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
@@ -34,6 +50,44 @@ export default function Profile() {
     setIsSubscribed(newValue);
     localStorage.setItem("subscribed", newValue);
   };
+
+  const handleAddMember = () => {
+  if (
+    !memberForm.name ||
+    !memberForm.email ||
+    !memberForm.role ||
+    !memberForm.password
+  ) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  const newMember = {
+    id: Date.now(),
+    ...memberForm,
+    status: "Active",
+  };
+
+  const updatedMembers = [...teamMembers, newMember];
+
+  setTeamMembers(updatedMembers);
+
+  localStorage.setItem(
+    "teamMembers",
+    JSON.stringify(updatedMembers)
+  );
+
+  setMemberForm({
+    name: "",
+    email: "",
+    role: "",
+    password: "",
+  });
+
+  setShowMemberForm(false);
+
+  alert("Team Member Added ✅");
+};
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -53,29 +107,40 @@ export default function Profile() {
       </div>
 
       {/* TABS */}
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setActiveTab("profile")}
-          className={`px-5 py-2 rounded-lg ${
-            activeTab === "profile"
-              ? "bg-black text-white"
-              : "bg-white border"
-          }`}
-        >
-          Profile
-        </button>
+<div className="flex gap-4 mb-6">
+  <button
+    onClick={() => setActiveTab("profile")}
+    className={`px-5 py-2 rounded-lg ${
+      activeTab === "profile"
+        ? "bg-black text-white"
+        : "bg-white border"
+    }`}
+  >
+    Profile
+  </button>
 
-        <button
-          onClick={() => setActiveTab("plan")}
-          className={`px-5 py-2 rounded-lg ${
-            activeTab === "plan"
-              ? "bg-black text-white"
-              : "bg-white border"
-          }`}
-        >
-          Manage Plan
-        </button>
-      </div>
+  <button
+    onClick={() => setActiveTab("plan")}
+    className={`px-5 py-2 rounded-lg ${
+      activeTab === "plan"
+        ? "bg-black text-white"
+        : "bg-white border"
+    }`}
+  >
+    Manage Plan
+  </button>
+
+  <button
+    onClick={() => setActiveTab("team")}
+    className={`px-5 py-2 rounded-lg ${
+      activeTab === "team"
+        ? "bg-black text-white"
+        : "bg-white border"
+    }`}
+  >
+    Team Management
+  </button>
+</div>
 
       {/* ================= PROFILE ================= */}
       {activeTab === "profile" && (
@@ -84,15 +149,15 @@ export default function Profile() {
           {/* LEFT PROFILE CARD */}
           <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center text-center">
 
-  <FaUserCircle className="text-7xl text-gray-400 mb-4" />
+            <FaUserCircle className="text-7xl text-gray-400 mb-4" />
 
-  <h2 className="text-xl font-semibold">
-    {user.name || "User Name"}
-  </h2>
+            <h2 className="text-xl font-semibold">
+              {user.name || "User Name"}
+            </h2>
 
-  <p className="text-gray-500">{user.email}</p>
+            <p className="text-gray-500">{user.email}</p>
 
-</div>
+          </div>
 
           {/* RIGHT DETAILS */}
           <div className="col-span-2 bg-white rounded-2xl shadow p-6">
@@ -179,9 +244,8 @@ export default function Profile() {
           ].map((plan) => (
             <div
               key={plan.name}
-              className={`p-6 rounded-2xl shadow bg-white ${
-                plan.highlight ? "border-2 border-black scale-105" : ""
-              }`}
+              className={`p-6 rounded-2xl shadow bg-white ${plan.highlight ? "border-2 border-black scale-105" : ""
+                }`}
             >
               <h2 className="text-xl font-bold mb-2">{plan.name}</h2>
               <p className="text-gray-500 mb-4">{plan.price}</p>
@@ -194,18 +258,25 @@ export default function Profile() {
 
               <button
                 onClick={toggleSubscription}
-                className={`w-full py-2 rounded-lg ${
-                  isSubscribed
+                className={`w-full py-2 rounded-lg ${isSubscribed
                     ? "bg-red-500 text-white"
                     : "bg-green-500 text-white"
-                }`}
+                  }`}
               >
                 {isSubscribed ? "Unsubscribe" : "Subscribe"}
               </button>
             </div>
+
+
           ))}
         </div>
+        
       )}
+
+
+      
     </div>
+
   );
 }
+

@@ -11,7 +11,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
 
         {/* Top Section */}
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+        <div className="grid md:grid-cols-5 gap-8 mb-12">
 
           {/* Brand */}
           <motion.div
@@ -26,8 +26,8 @@ export default function Footer() {
               Manufacto
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Smart manufacturing inventory system to track raw materials,
-              production, and finished goods in real-time.
+            Manufacturing ERP software that helps businesses manage production, inventory,  quality,
+and financial operations from a single platform.
             </p>
 
             {/* Social Icons */}
@@ -53,36 +53,76 @@ export default function Footer() {
             transition={{ duration: 0.6, delay: 0.1 }}
           >
             <h3 className="font-semibold mb-4">Product</h3>
-            <ul className="space-y-3 text-gray-400 text-sm">
-              <li className="hover:text-white cursor-pointer">Features</li>
-              <li className="hover:text-white cursor-pointer">Pricing</li>
-              <li className="hover:text-white cursor-pointer">Use Cases</li>
-              <li className="hover:text-white cursor-pointer">Demo</li>
-            </ul>
+
+<ul className="space-y-3 text-gray-400 text-sm">
+  <li className="hover:text-white cursor-pointer">Production Management</li>
+  <li className="hover:text-white cursor-pointer">Inventory Management</li>
+  <li className="hover:text-white cursor-pointer">Procurement</li>
+  <li className="hover:text-white cursor-pointer">Quality Control</li>
+  <li className="hover:text-white cursor-pointer">ERP Dashboard</li>
+</ul>
           </motion.div>
 
-          {/* Links 2 */}
+ {/* Links 2 */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <h3 className="font-semibold mb-4">Company</h3>
-            <ul className="space-y-3 text-gray-400 text-sm">
-              <li className="hover:text-white cursor-pointer">About Us</li>
-              <li className="hover:text-white cursor-pointer">Careers</li>
-              <li className="hover:text-white cursor-pointer">Blog</li>
-              <li className="hover:text-white cursor-pointer">Contact</li>
-            </ul>
-          </motion.div>
+  initial={{ opacity: 0, y: 40 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6, delay: 0.2 }}
+>
+  <h3 className="font-semibold mb-4">Support</h3>
 
+  <ul className="space-y-3 text-gray-400 text-sm">
+    <li className="hover:text-white cursor-pointer">
+      Help Center
+    </li>
+
+    <li className="hover:text-white cursor-pointer">
+      Documentation
+    </li>
+
+    <li className="hover:text-white cursor-pointer">
+      Request Demo
+    </li>
+
+    <li className="hover:text-white cursor-pointer">
+      Contact Sales
+    </li>
+  </ul>
+</motion.div>
+
+          {/* Links 3 */}
+          <motion.div
+  initial={{ opacity: 0, y: 40 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6, delay: 0.3 }}
+>
+  <h3 className="font-semibold mb-4">Company</h3>
+
+  <ul className="space-y-3 text-gray-400 text-sm">
+    <li className="hover:text-white cursor-pointer">
+      About Us
+    </li>
+
+    <li className="hover:text-white cursor-pointer">
+      Our Mission
+    </li>
+
+    <li className="hover:text-white cursor-pointer">
+      Careers
+    </li>
+
+    <li className="hover:text-white cursor-pointer">
+      Contact Us
+    </li>
+  </ul>
+</motion.div>
           {/* Newsletter */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <h3 className="font-semibold mb-4">Stay Updated</h3>
+            <h3 className="font-semibold mb-4">Get Industry Insights</h3>
             <p className="text-gray-400 text-sm mb-4">
               Subscribe to get latest updates about manufacturing tech.
             </p>
@@ -115,6 +155,10 @@ export default function Footer() {
             <span className="hover:text-white cursor-pointer">
               Terms of Service
             </span>
+              <span className="hover:text-white cursor-pointer">
+    Cookie Policy
+  </span>
+
           </div>
 
         </div>

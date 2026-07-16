@@ -1,8 +1,12 @@
 import Navbar from "./Navbar";
 import Hero from "./Hero";
 import Features from "./Features";
-import BusinessSection from "./BusinessSection";
+import Benefits from "./Benefits";
+import ERPModules from "./ERPModules";
+import IndustrySolutions from "./IndustrySolutions";
+import DashboardPreview from "./DashboardPreview";
 import Pricing from "./Pricing";
+import ContactSection from "./ContactSection";
 import Testimonials from "./Testimonials";
 import Footer from "./Footer";
 
@@ -23,14 +27,35 @@ export default function Home() {
         <Features />
       </section>
 
-      {/* Business / Use Case Section */}
-      <section id="usecases" className="pt-10">
-        <BusinessSection />
+      {/* Benefits */}
+<section id="benefits" className="pt-10">
+  <Benefits />
+</section>
+
+{/* ERP Modules */}
+      <section id="modules" className="pt-10">
+        <ERPModules />
       </section>
+
+
+      {/* IndustrySolutions */}
+      <section id="usecases" className="pt-10">
+        <IndustrySolutions />
+      </section>
+
+       {/* DashboardPreview */}
+      <section id="dashboard-preview" className="pt-10">
+  <DashboardPreview />
+</section>
 
       {/* Pricing */}
       <section id="pricing" className="pt-10">
         <Pricing />
+      </section>
+
+       {/* Contact Section */}
+      <section id="contact">
+        <ContactSection />
       </section>
 
       {/* Testimonials */}

@@ -7,13 +7,6 @@ export default function Packaging() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [viewData, setViewData] = useState(null);
 
-
-
-  const [rawMaterials, setRawMaterials] = useState([]);
-const [materialList, setMaterialList] = useState([]);
-const [selectedMaterial, setSelectedMaterial] = useState("");
-const [quantity, setQuantity] = useState("");
-
   const [formData, setFormData] = useState({
     packId: "",
     product: "",
@@ -27,15 +20,13 @@ const [quantity, setQuantity] = useState("");
   });
 
   /* ================= LOAD DATA ================= */
-useEffect(() => {
-  const pack = JSON.parse(localStorage.getItem("packaging")) || [];
-  const saved = JSON.parse(localStorage.getItem("packagingData")) || [];
-  const raw = JSON.parse(localStorage.getItem("rawMaterials")) || [];
+  useEffect(() => {
+    const pack = JSON.parse(localStorage.getItem("packaging")) || [];
+    const saved = JSON.parse(localStorage.getItem("packagingData")) || [];
 
-  setPackData(pack);
-  setSavedData(saved);
-  setRawMaterials(raw);
-}, []);
+    setPackData(pack);
+    setSavedData(saved);
+  }, []);
 
   /* ================= OPEN FORM ================= */
   const handlePack = (product) => {
@@ -55,73 +46,19 @@ useEffect(() => {
     });
   };
 
+  /* ================= HANDLE CHANGE ================= */
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+  };
 
-
-
-
-  const addMaterial = () => {
-  if (!selectedMaterial || !quantity) return;
-
-  const qty = Number(quantity);
-
-  setMaterialList([
-    ...materialList,
-    {
-      material: selectedMaterial,
-      qty: qty,
-      usableQty: 0,
-      usableReason: "",
-      usableCustomReason: "",
-      unusableQty: 0,
-      unusableReason: "",
-      unusableCustomReason: "",
-      outputQty: qty,
-    },
-  ]);
-
-  setSelectedMaterial("");
-  setQuantity("");
-};
-
-const deleteMaterial = (index) => {
-  const updated = materialList.filter((_, i) => i !== index);
-  setMaterialList(updated);
-};
-
-
-const handleSave = () => {
+  /* ================= SAVE ================= */
+ const handleSave = () => {
   let updated;
-
-  // 🔥 REDUCE RAW MATERIAL STOCK
-  const raw = JSON.parse(localStorage.getItem("rawMaterials")) || [];
-
-  const updatedRaw = raw.map((r) => {
-    const used = materialList
-      .filter((m) => m.material === r["Material Name"])
-      .reduce((sum, m) => sum + m.qty, 0);
-
-    if (used > 0) {
-      const available = Number(r["Available Quantity"]) || 0;
-      r["Available Quantity"] = Math.max(available - used, 0);
-
-      const lowStock = Number(r["Low Stock"]) || 0;
-
-      if (r["Available Quantity"] === 0)
-        r["Stock Status"] = "Out of Stock";
-      else if (r["Available Quantity"] <= lowStock)
-        r["Stock Status"] = "Low Stock";
-      else r["Stock Status"] = "In Stock";
-    }
-
-    return r;
-  });
-
-  localStorage.setItem("rawMaterials", JSON.stringify(updatedRaw));
 
   const finalData = {
     ...formData,
-    materials: materialList,
-    productId: formData.productId || selectedProduct?.productId,
+    productId:
+      formData.productId || selectedProduct?.productId,
   };
 
   const index = savedData.findIndex(
@@ -141,15 +78,6 @@ const handleSave = () => {
   alert("Saved Successfully ✅");
   setSelectedProduct(null);
 };
-
-
-  /* ================= HANDLE CHANGE ================= */
-  const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
-  /* ================= SAVE ================= */
-
 
 //updateproductstege
 const updateProductStage = (productId, newStage) => {
